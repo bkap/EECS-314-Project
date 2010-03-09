@@ -1,0 +1,29 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage{palatino, graphicx, amsmath, amsfonts, setspace}
+
+\title{Reverse Polish Calculator}
+\author{Jacob Emmert-Aronson, Andrew Johnson, Ben Kaplan, and Frankie Lutikoff}
+\date{February 25, 2010}
+
+\doublespacing
+
+\begin{document}
+\maketitle
+We will be implementing a reverse Polish calculator in MIPS assembly.
+The calculator will take expressions in reverse Polish notation from
+standard input, compute the result, and print it to standard output.
+The calculator will support addition, subtraction, multiplication,
+division, exponentiation, roots, and the basic trigonometric
+functions: $\sin$, $\cos$, $\tan$, $\sec$, $\csc$, and $\cot$.  The
+$\sin$ function will be implemented with the Taylor series and the
+other functions will be computed relative to $\sin$.  The calculator
+will support operations on arbitrary integers and single-precision
+floating point numbers.
+
+The project will be divided in two parts.  The first part is IO,
+addition/subtraction, and multiplication.  Andrew Johnson and Frankie
+Lutikoff will be responsible for this part.  The second part is
+division, exponentiation, roots, and trigonometric functions.  Ben
+Kaplan and Jacob Emmert-Aronson will be responsible for this part.
+
+\end{document}
