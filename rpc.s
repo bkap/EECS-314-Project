@@ -18,7 +18,7 @@ read:   li $v0, 7               # set the operation to read_float
         addi $sp, $sp, -8       # decrement stack pointer
         s.d $f0, 0($sp)         # store the second operand on the stack
                 
-        li $v0, 8               # set the operation to read_string
+char:   li $v0, 8               # set the operation to read_string
         la $a0, op              # tell the system where to put the string
         li $a1, 2               # tell the system to read two bytes for the string
 
@@ -34,11 +34,14 @@ read:   li $v0, 7               # set the operation to read_float
         beq $t1, $s4, exp       # Perform exponentiation
         beq $t1, $s5, root      # Perform root
 
-        la $a0, bad             # If an illegal character has been entered, alert the user, then reset
+        la $a0, bad             # If an illegal character has been entered, alert the user, then try again
         li $v0, 4
         syscall
 
-        j main                  # restart the calculator
+        li $v0, 7               # Flush the input
+        syscall                 # Something appears to remain in the input, causing the next read to fail
+
+        j char                  # Try reading a character again
 
 plus:   l.d $f4, 0($sp)         # Get the second operand
         addi $sp, $sp, 8
@@ -153,7 +156,7 @@ exit:   li $v0, 10              # Quit the program
 
         .data
 op:     .space 2                # Allocate 2 bytes for the operator (one character and null)
-bad:    .asciiz "Illegal character entered, resetting calculator\n"
+bad:    .asciiz "Illegal character entered, try again.\n"
 return: .asciiz "\n"
 plusc:  .asciiz "+"
 timesc: .asciiz "*"
