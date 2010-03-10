@@ -40,9 +40,9 @@ read:   li $v0, 7               # set the operation to read_float
 
         j main                  # restart the calculator
 
-plus:   l.d $f4, 0($sp)         # Get the first operand
+plus:   l.d $f4, 0($sp)         # Get the second operand
         addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the second operand
+        l.d $f6, 0($sp)         # Get the first operand
         addi $sp, $sp, 8
 
         add.d $f12, $f4, $f6    # Add the two operands
@@ -62,9 +62,9 @@ plus:   l.d $f4, 0($sp)         # Get the first operand
         
         j read                  # Continue the read loop
 
-times:  l.d $f4, 0($sp)         # Get the first operand
+times:  l.d $f4, 0($sp)         # Get the second operand
         addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the second operand
+        l.d $f6, 0($sp)         # Get the first operand
         addi $sp, $sp, 8
 
         mul.d $f12, $f4, $f6    # Multiply the two operands
@@ -84,9 +84,9 @@ times:  l.d $f4, 0($sp)         # Get the first operand
         
         j read                  # Continue the read loop
 
-divd:   l.d $f4, 0($sp)         # Get the first operand
+divd:   l.d $f4, 0($sp)         # Get the second operand
         addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the second operand
+        l.d $f6, 0($sp)         # Get the first operand
         addi $sp, $sp, 8
 
         div.d $f12, $f6, $f4    # Divide the two operands
@@ -106,9 +106,9 @@ divd:   l.d $f4, 0($sp)         # Get the first operand
 
         j read                  # Continue the read loop
 
-subt:   l.d $f4, 0($sp)         # Get the first operand
+subt:   l.d $f4, 0($sp)         # Get the second operand
         addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the second operand
+        l.d $f6, 0($sp)         # Get the first operand
         addi $sp, $sp, 8
 
         sub.d $f12, $f6, $f4    # Subtract the two operands
@@ -128,9 +128,9 @@ subt:   l.d $f4, 0($sp)         # Get the first operand
 
         j read                  # Continue the read loop
 
-exp:    l.d $f4, 0($sp)         # Get the first operand
+exp:    l.d $f4, 0($sp)         # Get the second operand
         addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the second operand
+        l.d $f6, 0($sp)         # Get the first operand
         addi $sp, $sp, 8
 
         li $v0, 7               # Flush the input
@@ -138,9 +138,9 @@ exp:    l.d $f4, 0($sp)         # Get the first operand
 
         j read                  # Continue the read loop
 
-root:   l.d $f4, 0($sp)         # Get the first operand
+root:   l.d $f4, 0($sp)         # Get the second operand
         addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the second operand
+        l.d $f6, 0($sp)         # Get the first operand
         addi $sp, $sp, 8
 
         li $v0, 7               # Flush the input
