@@ -1,3 +1,4 @@
+#!/usr/bin/spim -f
 main:
         lb $s0, plusc           # Set $s0 to contain the plus character
         lb $s1, timesc          # Set $s1 to contain the times character
