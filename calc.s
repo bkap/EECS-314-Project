@@ -164,7 +164,53 @@ end:    addi $sp, $sp, -8
         li $t7, 1               # Set the flag
         
         j main                  # Continue the read loop
+##NEED TO FIGURE OUT HOW TO DO THIS STILL
 
+atof:
+        #stuff is in the same position as the sys call.
+        #a0 is the location of the string, a1 is the length
+        #f30 is the return value.
+        add $t0, $a0, $zero #p in the sample code
+        addi $t1, $zero, 32 #keep going if it's less than this
+        lbu $t2, 0($t0)
+        addi $t3, $a1, -1 
+#whil isspace p++
+isspace: bgt $t2, $t1, endspace
+         blt $t3, $zero, retz #return 0 if it's all space
+         addi $t3, $t3, -1
+         addi $t0, $t0, 1
+         lbu $t2, 0($t0)
+         j isspace
+endspace:
+        add $t4, $zero, $zero #t4 = negative
+        addi $t5, $zero, 0x2D #check for asii minus
+        bne $t2, $t5, SKIPNEG
+        addi $t4, $zero, 1
+        addi $t0, $t0, 1 #p++
+        addi $t3, $t3, -1
+        j cont1
+SKIPNEG: addi $t5, $zero, 0x2B #check for ascii plus
+         bne $t2, $t5, cont1
+         addi $t0, $t0, 1 #p++
+        addi $t3, $t3, -1
+cont1:  lbu $t2, 0($t0)
+        #f30 = num
+        #t7 = exp
+        #t8 = num_digits
+        #t9 = num_dec
+        
+isdigit: :
+        #check gt '0'
+        addi $t5, $zero, 0x30
+        blt 
+enddig:
+endaf:     jr $ra
+
+retz:
+    #TODO: return 0.0 Need to figure out how to do this
+    jr $ra
+
+#####
 exit:   li $v0, 10              # Quit the program
         syscall
 
