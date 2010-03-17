@@ -110,14 +110,16 @@ cont:   li.d $f8, 0.0           # Set $f8 to 0
         c.eq.d $f4, $f8
         bc1t end                # Keep going until the exponent hits zero
         
+        c.lt.d $f4, $f8         # Check if there is a fractional part to the exponent
+        bc1t frac               # If so, jump to the computation for the fractional part
+        
         mul.d $f12, $f12, $f6   # Multiply $f6 by the running product in $f12
         li.d $f8, 1.0           # Set $f8 to 1
         sub.d $f4, $f4, $f8     # Decrement $f4
-        c.lt.d $f4, $f8         # Check if there is a fractional part to the exponent
-        bc1t frac               # If so, jump to the computation for the fractional part
+        
         j cont                  # Continue multiplication
         
-frac:   j main                  # The computation for the fractional part of the exponent will go here, this line should be removed
+frac:   j main                  # The computation for the fractional part of the exponent will go here
 
 sin:    l.d $f4, 0($sp)         # Get the operand
         addi $sp, $sp, 8
