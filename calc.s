@@ -8,11 +8,11 @@ main:
         lb $s5, cscc            # Set $s5 to contain the csc character
         lb $s6, quitc           # Set $s6 to contain the quit character
         
-char:   li $v0, 12               # set the operation to read_character
+char:   li $v0, 12              # set the operation to read_character
         syscall                 # get the operator from the user
         move $t1, $v0
         li $v0, 12
-        syscall
+        syscall                 # clear the newline from the input
         
         beq $t1, $s6, exit      # If the user enters 'q', exit the program
         
