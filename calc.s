@@ -11,6 +11,7 @@ main:
 char:   li $v0, 12              # set the operation to read_character
         syscall                 # get the operator from the user
         move $t1, $v0
+        move $s7, $t1
         li $v0, 12
         syscall                 # clear the newline from the input
         
@@ -18,12 +19,15 @@ char:   li $v0, 12              # set the operation to read_character
         
         bgt $t7, $zero, skip    # If we have an operand on the stack, read at most one operand
         
-        li $v0, 7               # set the operation to read_float
+        li $v0, 8               # set the operation to read_float
+        add $a0, $sp, $zero
+        li $a1, 8
+        
         syscall                 # get the first operand from the user
-        
+        jal atof
         addi $sp, $sp, -8       # decrement stack pointer
-        s.d $f0, 0($sp)         # store the first operand on the stack
-        
+        s.d $f30, 0($sp)         # store the first operand on the stack
+        move $t1, $s7
 skip:   beq $t1, $s0, sin       # perform sin
         beq $t1, $s1, cos       # perform cos
         beq $t1, $s2, tan       # perform tan
@@ -38,11 +42,15 @@ skip:   beq $t1, $s0, sin       # perform sin
         lb $s4, expc            # Set $s4 to contain the power character
 
         li $v0, 7               # set the operation to read_float
+        li $v0, 8
+        addi $sp, $sp, -8
+        add $a0, $sp, $zero
+        li $a1, 8
         syscall                 # get the next operand from the user
+        jal atof
         
-        addi $sp, $sp, -8       # decrement stack pointer
-        s.d $f0, 0($sp)         # store the second operand on the stack
-
+        s.d $f30, 0($sp)         # store the second operand on the stack
+        move $t1, $s7
         beq $t1, $s0, plus      # Perform addition
         beq $t1, $s1, times     # Perform multiplication
         beq $t1, $s2, divd      # Perform division
@@ -174,6 +182,7 @@ atof:
         addi $t1, $zero, 32 #keep going if it's less than this
         lbu $t2, 0($t0)
         addi $t3, $a1, -1 
+
 #whil isspace p++
 isspace: bgt $t2, $t1, endspace
          ble $t3, $zero, retz #return 0 if it's all space
@@ -209,7 +218,7 @@ cont1:
         #increment stack pointer so I can use it
         #also, set some values to 0
     
-        addi $sp, $sp, 4
+        addi $sp, $sp, -4
         #put 10 in $f14
         addi $t5, $zero, 10
         sw $t5, 0($sp)
@@ -223,6 +232,7 @@ isdigit:
         lbu $t2, 0($t0)
         #make sure we didn't use all chrs
         beq $t3, $zero, enddig
+        beq $t2, $zero, enddig
         #check lt '0'
         addi $t5, $zero, 0x30
         blt $t2, $t5, enddig
@@ -255,6 +265,7 @@ isdigit:
 
 enddig: 
         beq $t3, $zero, enddec
+        beq $t2, $zero, enddec
         #use t6 as a flag to check if I've done decimals
         bne $t6, $zero, enddec
         #check to see if we've hit a '.'
@@ -274,6 +285,7 @@ enddec:
         #check for E
 testexp:
         beq $t3, $zero, endexp
+        beq $t2, $zero, endexp
         addi $t5, $zero, 0x45 #E
         beq $t5, $t2, fltexp
         addi $t5, $zero, 0x65 #e
@@ -292,6 +304,9 @@ fltexp:
         j cntexp
 cseneg:
         addi $t4, $zero, 1
+        li $v0, 4
+        la $a0, isneg
+        syscall
 csepos: addi $t0, $t0, 1
         addi $t3, $t3, -1
 cntexp:
@@ -301,6 +316,7 @@ isdig2:
         #exponent stored in $t7
         lbu $t2, 0($t0)
         #make sure we didn't use all chrs
+        beq $t2, $zero, enddig2
         beq $t3, $zero, enddig2
         #check lt '0'
         addi $t5, $zero, 0x30
@@ -326,8 +342,7 @@ isdig2:
         j isdig2
 enddig2:
         beq $t4, $zero, addexp
-        negu $t6, $t6
-
+        sub $t6, $zero, $t6
 addexp: add $t7, $t7, $t6
 
 
@@ -346,7 +361,7 @@ endexp:
 scale:  beq $t6, $zero, endatof
         andi $t4, $t6, 1
         beq $t4, $zero, cntscl
-        bge $t7, $zero, divscl
+        blt $t7, $zero, divscl
         #exp >= 0
         mul.d $f30, $f30, $f14
         j cntscl
@@ -354,14 +369,14 @@ divscl: div.d $f30, $f30, $f14
 cntscl:
         sra $t6, $t6, 1
         mul.d $f14, $f14, $f14
-        j endatof
-error: #need to take care of error handeling later
+        j scale
+        error: #need to take care of error handeling later
 retz:
         sw $zero, 0($sp)
         lwc1 $f30, 0($sp)
         cvt.d.w $f30, $f30
 endatof:
-        addi $sp, $sp, -4 #remove that stack location I used
+        addi $sp, $sp, 4 #remove that stack location I used
         jr $ra
 
 #####
@@ -369,7 +384,7 @@ exit:   li $v0, 10              # Quit the program
         syscall
 
         .data
-op:     .space 2                # Allocate 2 bytes for the operator (one character and null)
+op:     .space 5                # Allocate 2 bytes for the operator (one character and null)
 bad:    .asciiz "Illegal character entered, try again.\n"
 return: .asciiz "\n"
 plusc:  .asciiz "+"
@@ -384,3 +399,4 @@ cotc:   .asciiz "o"
 secc:   .asciiz "e"
 cscc:   .asciiz "a"
 quitc:  .asciiz "q"
+isneg:  .asciiz "is neg exp\n"
