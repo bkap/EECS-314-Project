@@ -172,21 +172,73 @@ end:    addi $sp, $sp, -8
         li $t7, 1               # Set the flag
         
         j main                  # Continue the read loop
-##still a work in progress
 
+
+######STRCMP AND STRCASECMP#####
+strcmp:
+        #a0 = loc of string 1
+        #a1 = loc of string 2
+        #v0 = 0 if they're the same, nonzero if they're different
+        lbu $t0, 0($a0)
+        lbu $t1, 0($a1)
+        beq $t0, $zero, endcmp
+        beq $t1, $zero, endcmp
+        bne $t0, $t1, endcmp
+        addi $a0, $a0, 1
+        addi $a1, $a1, 1
+endcmp:
+        add $v0, $t0, $t1
+        add $v1, $a0, $zero #set v1 = end pointer
+        jal $ra
+
+strcasecmp:
+    #convert $a0 and $a1 to upper case and return strcmp
+        addi $t0, $zero, 0x61 #'a'
+        addi $t1, $zero, 0x7a #'z'
+        addi $t5, $zero, 0x20 # space for terminating
+        add $t2, $a0, $zero
+        add $t3, $a1, $zero
+cvrt0:
+        lbu $t4, 0($t2)
+        beq $t4, $zero, cvrt1
+        beq $t4, $t5, strcmp
+        blt $t4, $t0, cvrt02
+        bgt $t4, $t1, cvrt02
+        addi $t4, $t4, -32 #difference between upper and lower case
+        sw $t4, 0($t2)
+cvrt02:
+        addi $t2, $t2, 1
+        j cvrt0
+cvrt1:
+        lbu $t4, 0($t3)
+        beq $t4, $zero, strcmp #should always get called, as long as you have
+                                #null terminated strings
+        beq $t4, $t5, strcmp
+        blt $t4, $t0, cvrt12
+        bgt $t4, $t1, cvrt12
+        addi $t4, $t4, -32
+        sw $t4, 0($t3)
+cvrt12:
+        addi $t3, $t3, 1
+        j cvrt1
+
+###### END STRCMP ####
+
+##### atof ######
 atof:
         #stuff is in the same position as the sys call.
         #a0 is the location of the string, a1 is the length
         #f30 is the return value.
+
+        addi $a3, $zero, 0x20 #terminate on space. Yes I know this isn't a
+                                #temp, but I'm using all of them
         add $t0, $a0, $zero #p in the sample code
         addi $t1, $zero, 32 #keep going if it's less than this
         lbu $t2, 0($t0)
-        addi $t3, $a1, -1 
 
-#whil isspace p++
+    #while isspace p++
 isspace: bgt $t2, $t1, endspace
-         ble $t3, $zero, retz #return 0 if it's all space
-         addi $t3, $t3, -1
+         beq $t2, $zero, retz #if it ends in a null a null, return 0
          addi $t0, $t0, 1
          lbu $t2, 0($t0)
          j isspace
@@ -196,12 +248,10 @@ endspace:
         bne $t2, $t5, SKIPNEG
         addi $t4, $zero, 1
         addi $t0, $t0, 1 #p++
-        addi $t3, $t3, -1
         j cont1
 SKIPNEG: addi $t5, $zero, 0x2B #check for ascii plus
          bne $t2, $t5, cont1
          addi $t0, $t0, 1 #p++
-        addi $t3, $t3, -1
 cont1: 
         #f30 = num
         #t6 = flag
@@ -231,8 +281,8 @@ cont1:
 isdigit:
         lbu $t2, 0($t0)
         #make sure we didn't use all chrs
-        beq $t3, $zero, enddig
         beq $t2, $zero, enddig
+        beq $t2, $a3, enddig
         #check lt '0'
         addi $t5, $zero, 0x30
         blt $t2, $t5, enddig
@@ -255,7 +305,6 @@ isdigit:
 
         #p++
         addi $t0, $t0, 1
-        addi $t3, $t3, -1
         #num_digits ++
         addi $t8, $t8, 1
         add $t9, $t9, $t6 #t6 = 0 during int part
@@ -264,8 +313,8 @@ isdigit:
         j isdigit
 
 enddig: 
-        beq $t3, $zero, enddec
         beq $t2, $zero, enddec
+        beq $t2, $a3, enddec
         #use t6 as a flag to check if I've done decimals
         bne $t6, $zero, enddec
         #check to see if we've hit a '.'
@@ -273,7 +322,6 @@ enddig:
         addi $t6, $zero, 1
         bne $t5, $t2, enddec
         addi $t0, $t0, 1
-        addi $t3, $t3, -1
         j isdigit
 enddec:
         #if num_digits == 0, error
@@ -284,8 +332,8 @@ enddec:
 
         #check for E
 testexp:
-        beq $t3, $zero, endexp
         beq $t2, $zero, endexp
+        beq $t2, $a3, endexp
         addi $t5, $zero, 0x45 #E
         beq $t5, $t2, fltexp
         addi $t5, $zero, 0x65 #e
@@ -295,7 +343,6 @@ testexp:
 fltexp:
         add $t4, $zero, $zero
         addi $t0, $t0, 1
-        addi $t3, $t3, -1
         lbu $t2, 0($t0)
         addi $t5, $zero, 0x2D #minus
         beq $t2, $t5, cseneg
@@ -304,11 +351,8 @@ fltexp:
         j cntexp
 cseneg:
         addi $t4, $zero, 1
-        li $v0, 4
-        la $a0, isneg
         syscall
 csepos: addi $t0, $t0, 1
-        addi $t3, $t3, -1
 cntexp:
     #now using t6 for n
     add $t6, $zero, $zero
@@ -317,7 +361,7 @@ isdig2:
         lbu $t2, 0($t0)
         #make sure we didn't use all chrs
         beq $t2, $zero, enddig2
-        beq $t3, $zero, enddig2
+        beq $t2, $a3, enddig2
         #check lt '0'
         addi $t5, $zero, 0x30
         blt $t2, $t5, enddig2
@@ -338,7 +382,6 @@ isdig2:
 
         #p++
         addi $t0, $t0, 1
-        addi $t3, $t3, -1
         j isdig2
 enddig2:
         beq $t4, $zero, addexp
@@ -377,9 +420,12 @@ retz:
         cvt.d.w $f30, $f30
 endatof:
         addi $sp, $sp, 4 #remove that stack location I used
+        add $v1, $t0, $zero #set v1 to the end pointer
         jr $ra
 
-#####
+##### END ATOF ######
+
+
 exit:   li $v0, 10              # Quit the program
         syscall
 
@@ -399,4 +445,3 @@ cotc:   .asciiz "o"
 secc:   .asciiz "e"
 cscc:   .asciiz "a"
 quitc:  .asciiz "q"
-isneg:  .asciiz "is neg exp\n"
