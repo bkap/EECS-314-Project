@@ -164,7 +164,7 @@ end:    addi $sp, $sp, -8
         li $t7, 1               # Set the flag
         
         j main                  # Continue the read loop
-##NEED TO FIGURE OUT HOW TO DO THIS STILL
+##still a work in progress
 
 atof:
         #stuff is in the same position as the sys call.
@@ -176,7 +176,7 @@ atof:
         addi $t3, $a1, -1 
 #whil isspace p++
 isspace: bgt $t2, $t1, endspace
-         blt $t3, $zero, retz #return 0 if it's all space
+         ble $t3, $zero, retz #return 0 if it's all space
          addi $t3, $t3, -1
          addi $t0, $t0, 1
          lbu $t2, 0($t0)
@@ -193,22 +193,176 @@ SKIPNEG: addi $t5, $zero, 0x2B #check for ascii plus
          bne $t2, $t5, cont1
          addi $t0, $t0, 1 #p++
         addi $t3, $t3, -1
-cont1:  lbu $t2, 0($t0)
+cont1: 
         #f30 = num
+        #t6 = flag
         #t7 = exp
         #t8 = num_digits
         #t9 = num_dec
-        
-isdigit: :
-        #check gt '0'
-        addi $t5, $zero, 0x30
-        blt 
-enddig:
-endaf:     jr $ra
 
+        add $t9, $zero, $zero
+        add $t8, $zero, $zero
+        add $t7, $zero, $zero
+        add $t6, $zero, $zero
+
+
+        #increment stack pointer so I can use it
+        #also, set some values to 0
+    
+        addi $sp, $sp, 4
+        #put 10 in $f14
+        addi $t5, $zero, 10
+        sw $t5, 0($sp)
+        lwc1 $f14, 0($sp)
+        cvt.D.W $f14, $f14
+        #clear $f30
+        sw $zero, 0($sp)
+        lwc1 $f30, 0($sp)
+        cvt.D.W $f30, $f30
+isdigit:
+        lbu $t2, 0($t0)
+        #make sure we didn't use all chrs
+        beq $t3, $zero, enddig
+        #check lt '0'
+        addi $t5, $zero, 0x30
+        blt $t2, $t5, enddig
+        addi $t5, $t5, 9 #check if gt 9
+        bgt $t2, $t5, enddig
+
+        #now we know it's a digit
+        
+        #n = n * 10
+        mul.d $f30, $f30, $f14
+        
+        #x = (p-'0')
+        subi $t2, $t2, 0x30
+        sw $t2, 0($sp)
+        lwc1 $f16, 0($sp)
+        cvt.D.W $f16, $f16
+
+        #n += p
+        add.d $f30, $f30, $f16
+
+        #p++
+        addi $t0, $t0, 1
+        addi $t3, $t3, -1
+        #num_digits ++
+        addi $t8, $t8, 1
+        add $t9, $t9, $t6 #t6 = 0 during int part
+                           #1 during exp part
+        sub $t7, $zero, $t9
+        j isdigit
+
+enddig: 
+        beq $t3, $zero, enddec
+        #use t6 as a flag to check if I've done decimals
+        bne $t6, $zero, enddec
+        #check to see if we've hit a '.'
+        addi $t5, $zero, 0x2e
+        addi $t6, $zero, 1
+        bne $t5, $t2, enddec
+        addi $t0, $t0, 1
+        addi $t3, $t3, -1
+        j isdigit
+enddec:
+        #if num_digits == 0, error
+        beq $t8, $zero, error
+        #if negative, number = -number
+        beq $t4, $zero, testexp
+        neg.D $f30, $f30
+
+        #check for E
+testexp:
+        beq $t3, $zero, endexp
+        addi $t5, $zero, 0x45 #E
+        beq $t5, $t2, fltexp
+        addi $t5, $zero, 0x65 #e
+        beq $t5, $t2, fltexp
+        j endexp
+
+fltexp:
+        add $t4, $zero, $zero
+        addi $t0, $t0, 1
+        addi $t3, $t3, -1
+        lbu $t2, 0($t0)
+        addi $t5, $zero, 0x2D #minus
+        beq $t2, $t5, cseneg
+        addi $t5, $zero, 0x2B #plus
+        beq $t2, $t5, csepos
+        j cntexp
+cseneg:
+        addi $t4, $zero, 1
+csepos: addi $t0, $t0, 1
+        addi $t3, $t3, -1
+cntexp:
+    #now using t6 for n
+    add $t6, $zero, $zero
+isdig2: 
+        #exponent stored in $t7
+        lbu $t2, 0($t0)
+        #make sure we didn't use all chrs
+        beq $t3, $zero, enddig2
+        #check lt '0'
+        addi $t5, $zero, 0x30
+        blt $t2, $t5, enddig2
+        addi $t5, $t5, 9 #check if gt 9
+        bgt $t2, $t5, enddig2
+
+        #now we know it's a digit
+        
+        #n = n * 10
+        addi $t5, $zero, 10
+        mult $t6, $t5
+        mflo $t6
+        
+        #x = (p*-'0')
+        subi $t2, $t2, 0x30
+        #n += x
+        add $t6, $t6, $t2
+
+        #p++
+        addi $t0, $t0, 1
+        addi $t3, $t3, -1
+        j isdig2
+enddig2:
+        beq $t4, $zero, addexp
+        negu $t6, $t6
+
+addexp: add $t7, $t7, $t6
+
+
+endexp:
+        #check to see if exponent in range
+        addi $t5, $zero, -1022 #dbl min exp
+        blt $t7, $t5, error #ERANGE
+        addi $t5, $zero, 1023 #dbl max exp
+        bgt $t7, $t5, error
+        
+        #scale result
+        #f14 already = 10, so I'm using that as p10
+        addi $t6, $t7, 0
+        bge $t6, $zero, scale
+        negu $t6, $t6
+scale:  beq $t6, $zero, endatof
+        andi $t4, $t6, 1
+        beq $t4, $zero, cntscl
+        bge $t7, $zero, divscl
+        #exp >= 0
+        mul.D $f30, $f30, $f14
+        j cntscl
+divscl: div.D $f30, $f30, $f14
+cntscl:
+        sra $t6, $t6, 1
+        mul.D $f14, $f14, $f14
+        j endatof
+error: #need to take care of error handeling later
 retz:
-    #TODO: return 0.0 Need to figure out how to do this
-    jr $ra
+        sw $zero, 0($sp)
+        lwc1 $f30, 0($sp)
+        cvt.D.W $f30, $f30
+endatof:
+        addi $sp, $sp, -4 #remove that stack location I used
+        jr $ra
 
 #####
 exit:   li $v0, 10              # Quit the program
