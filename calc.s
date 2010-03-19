@@ -172,23 +172,64 @@ end:    addi $sp, $sp, -8
         li $t7, 1               # Set the flag
         
         j main                  # Continue the read loop
+#### infix parser #######
+    #op table:
+    #+ = 0
+    #- = 1
+    #* = 2
+    #/ = 3
+    #^ = 4
+    #sin = 5
+    #cos = 6
+    #tan = 7
+    #( = 8
 
+    #reg allocation:
+    #s0 = bottom of op stack
+    #s1 = top of op stack. s0 = s1 means stack is empty
+    #s2 = bottom of num stack
+    #s3 = top of num stack
+    #s4 = last action
+        #0 = paren
+        #1 = op
+        #2 = number
+        #3 = eval
+    #will keep a0 as current string location
+    #
+infix:
+    addi $sp, $sp, -8
+    add $s0, $sp, $zero #s0 = op table. Use bytes for ops. Max 8 ops should be
+                    #enough
+    
+    add $s1, $s0, $zero #s1 will be the top of the stack
+    addi $sp, $sp, -8
+
+    add $s2, $sp, $zero #s2 will be the number stack, each number takes up 2
+                        #words. Will allocate for 8 numbers = 64 bytes
+    addi, $sp, $sp, -64
+    add $s3, $s2, $zero #s3 will be the top of the number stack
+    #s4 = prev action. 
+    add $s4, $zero, $zero
 
 ######STRCMP AND STRCASECMP#####
 strcmp:
         #a0 = loc of string 1
         #a1 = loc of string 2
         #v0 = 0 if they're the same, nonzero if they're different
-        lbu $t0, 0($a0)
-        lbu $t1, 0($a1)
+        add $t2, $a0, $zero
+        add $t3, $t1, $zero
+strcmp2:
+        lbu $t0, 0($t2)
+        lbu $t1, 0($t3)
         beq $t0, $zero, endcmp
         beq $t1, $zero, endcmp
         bne $t0, $t1, endcmp
-        addi $a0, $a0, 1
-        addi $a1, $a1, 1
+        addi $t2, $t2, 1
+        addi $t3, $t3, 1
+        j strcmp2
 endcmp:
         add $v0, $t0, $t1
-        add $v1, $a0, $zero #set v1 = end pointer
+        add $v1, $t2, $zero #set v1 = end pointer
         jal $ra
 
 strcasecmp:
