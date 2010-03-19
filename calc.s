@@ -214,11 +214,11 @@ cont1:
         addi $t5, $zero, 10
         sw $t5, 0($sp)
         lwc1 $f14, 0($sp)
-        cvt.D.W $f14, $f14
+        cvt.d.w $f14, $f14
         #clear $f30
         sw $zero, 0($sp)
         lwc1 $f30, 0($sp)
-        cvt.D.W $f30, $f30
+        cvt.d.w $f30, $f30
 isdigit:
         lbu $t2, 0($t0)
         #make sure we didn't use all chrs
@@ -235,10 +235,10 @@ isdigit:
         mul.d $f30, $f30, $f14
         
         #x = (p-'0')
-        subi $t2, $t2, 0x30
+        addi $t2, $t2, -48
         sw $t2, 0($sp)
         lwc1 $f16, 0($sp)
-        cvt.D.W $f16, $f16
+        cvt.d.w $f16, $f16
 
         #n += p
         add.d $f30, $f30, $f16
@@ -269,7 +269,7 @@ enddec:
         beq $t8, $zero, error
         #if negative, number = -number
         beq $t4, $zero, testexp
-        neg.D $f30, $f30
+        neg.d $f30, $f30
 
         #check for E
 testexp:
@@ -316,7 +316,7 @@ isdig2:
         mflo $t6
         
         #x = (p*-'0')
-        subi $t2, $t2, 0x30
+        addi $t2, $t2, -48
         #n += x
         add $t6, $t6, $t2
 
@@ -348,18 +348,18 @@ scale:  beq $t6, $zero, endatof
         beq $t4, $zero, cntscl
         bge $t7, $zero, divscl
         #exp >= 0
-        mul.D $f30, $f30, $f14
+        mul.d $f30, $f30, $f14
         j cntscl
-divscl: div.D $f30, $f30, $f14
+divscl: div.d $f30, $f30, $f14
 cntscl:
         sra $t6, $t6, 1
-        mul.D $f14, $f14, $f14
+        mul.d $f14, $f14, $f14
         j endatof
 error: #need to take care of error handeling later
 retz:
         sw $zero, 0($sp)
         lwc1 $f30, 0($sp)
-        cvt.D.W $f30, $f30
+        cvt.d.w $f30, $f30
 endatof:
         addi $sp, $sp, -4 #remove that stack location I used
         jr $ra
