@@ -135,7 +135,7 @@ econt1: li.d $f8, 0.0           # Set $f8 to 0
         li.d $f8, 1.0           # Set $f8 to 1
         sub.d $f4, $f4, $f8     # Decrement $f4
         
-        j cont                  # Continue multiplication
+        j econt1                # Continue multiplication
         
 ### fractional exponent ###
         # Compute the fractional part of the exponent using the Taylor
