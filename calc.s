@@ -127,7 +127,57 @@ cont:   li.d $f8, 0.0           # Set $f8 to 0
         
         j cont                  # Continue multiplication
         
-frac:   j main                  # The computation for the fractional part of the exponent will go here
+### fractional exponent ###
+        # Compute the fractional part of the exponent using the Taylor
+        # expansion for x^b about 1, then multiply by the integer part
+        # of the exponent
+        #f0: holds the previous accumulated total
+        #f2: current accumulated total
+        #f4: the exponent
+        #f6: the base of the exponent
+        #f8: a constant, 0 or 1 as needed
+        #f10: counter for factorial
+        #f12: the integer portion of the exponent and return value
+        #f14: the current coefficient
+	#f16: the variable term
+	#f18: temporary
+frac:	li.d $f8, 1.0		# set $f8 to 1
+	c.le.d $f6, $f8
+	li.d $f8, 0.0		# set $f8 to 0
+
+	bc1t fcont0		# If the base is greater than 1, take
+	div.d $f6, $f8, $f6	# the reciprocal and negate the exponent.
+	li.d $f8, 0.0		
+	sub.d $f4, $f8, $f4
+
+fcont0:	c.le.d $f6, $f8
+	bc1f fcont1
+
+	la $a0, bad		# If the base is negative or zero, throw
+	li $v0, 4		# an error and let the user enter new
+	syscall			# numbers
+	j main
+
+fcont1:	li.d $f8, 1.0
+	li.d $f2, 1.0		# Set accumulated total to 1
+	sub.d $f6, $f6, $f8	# $f6 is now the base's distance from 1
+	li.d $f10, 1.0		# Initialize the factorial counter
+	li.d $f14, 1.0		# Initialize the coefficient
+	li.d $f16, 1.0		# Initialize variable term
+
+floop:	mov.d $f0, $f2		# Save the current total
+	div.d $f18, $f4, $f10	# multiply coefficient by
+	mul.d $f14, $f14, $f18	# exponent/factorial counter
+	mul.d $f16, $f16, $f6	# add 1 to exponent of variable term
+	mul.d $f18, $f14, $f16	# add product to accumulated total
+	add.d $f2, $f2, $f18
+	sub.d $f4, $f4, $f8	# decrement exponent
+	add.d $f10, $f10, $f8	# increment factorial counter
+
+	c.eq.d $f0, $f2		# repeat until the current term is below
+	bc1f floop		# the precision of the total
+	mul.d $f12, $f2, $f12	# multiply integer and fractional exponents
+        j end
 
 sin:    l.d $f4, 0($sp)         # Get the operand
         addi $sp, $sp, 8
