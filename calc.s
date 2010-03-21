@@ -156,6 +156,7 @@ frac:   li.d $f8, 1.0           # set $f8 to 1
         li.d $f8, 0.0           # set $f8 to 0
 
         bc1t fcont0             # If the base is greater than 1, take
+        li.d $f8, 1.0           # set $f8 to 1
         div.d $f6, $f8, $f6     # the reciprocal and negate the exponent.
         li.d $f8, 0.0           
         sub.d $f4, $f8, $f4
