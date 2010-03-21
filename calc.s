@@ -1,26 +1,34 @@
 #!/usr/bin/spim -f
 # This is a test
 main:
-        lb $s0, sinc            # Set $s0 to contain the sin character
-        lb $s1, cosc            # Set $s1 to contain the cos character
-        lb $s2, tanc            # Set $s2 to contain the tan character
-        lb $s3, cotc            # Set $s3 to contain the cot character
-        lb $s4, secc            # Set $s4 to contain the sec character
-        lb $s5, cscc            # Set $s5 to contain the csc character
-        lb $s6, quitc           # Set $s6 to contain the quit character
-        
-char:   li $v0, 12              # set the operation to read_character
-        syscall                 # get the operator from the user
+        li $s0, 5#sinc            # Set $s0 to contain the sin character
+        li $s1, 6#cosc            # Set $s1 to contain the cos character
+        li $s2, 7#tanc            # Set $s2 to contain the tan character
+        li $s3, 8#cotc            # Set $s3 to contain the cot character
+        li $s4, 9#secc            # Set $s4 to contain the sec character
+        li $s5, 10#cscc            # Set $s5 to contain the csc character
+        li $s6, 13#quitc           # Set $s6 to contain the quit character
+
+
+
+char:   li $v0, 8              # set the operation to read_character
+                         # get the operator from the user
+        #addi $sp, $sp, -8
+        add $a0, $zero, $sp
+        li $a1, 8 
+        syscall
+        jal getop
         move $t1, $v0
         move $s7, $t1
-        li $v0, 12
-        syscall                 # clear the newline from the input
+        #li $v0, 12
+        #syscall                 # clear the newline from the input
         
         beq $t1, $s6, exit      # If the user enters 'q', exit the program
         
-        bgt $t7, $zero, skip    # If we have an operand on the stack, read at most one operand
+       # bgt $t7, $zero, skip    # If we have an operand on the stack, read at most one operand
         
         li $v0, 8               # set the operation to read_float
+        addi $sp, $sp, -8
         add $a0, $sp, $zero
         li $a1, 8
         
@@ -36,11 +44,11 @@ skip:   beq $t1, $s0, sin       # perform sin
         beq $t1, $s4, sec       # perform sec
         beq $t1, $s5, csc       # perform csc
 
-        lb $s0, plusc           # Set $s0 to contain the plus character
-        lb $s1, timesc          # Set $s1 to contain the times character
-        lb $s2, divc            # Set $s2 to contain the divide character
-        lb $s3, subc            # Set $s3 to contain the subtract character
-        lb $s4, expc            # Set $s4 to contain the power character
+        li $s0, 0 #plusc           # Set $s0 to contain the plus character
+        li $s1, 2#timesc          # Set $s1 to contain the times character
+        li $s2, 3#divc            # Set $s2 to contain the divide character
+        li $s3, 1#subc            # Set $s3 to contain the subtract character
+        li $s4, 4#expc            # Set $s4 to contain the power character
 
         li $v0, 7               # set the operation to read_float
         li $v0, 8
@@ -237,14 +245,18 @@ end:    addi $sp, $sp, -8
 #### infix parser #######
     #op table:
     #+ = 0
-    #- = 1
-    #* = 2
-    #/ = 3
+    #- = 1 
+    #* = 2 
+    #/ = 3 
     #^ = 4
     #sin = 5
     #cos = 6
     #tan = 7
-    #( = 8
+    #csc = 8
+    #sec = 9
+    #cot = 10
+    #( = 11
+    #) = 12
 
     #reg allocation:
     #s0 = bottom of op stack
@@ -273,24 +285,91 @@ infix:
     #s4 = prev action. 
     add $s4, $zero, $zero
 
+
+#####GETOP ######
+# string to check = $a0, space or null term string
+# returns the op number if it's an operator, -1 if there's no match
+# sets $v0 to the number. Puts the number in $f30 if it's a number
+getop:  add $t6, $zero, $zero
+        add $t9, $ra, $zero
+        #start op
+        la $a1, allops
+        addi $v0, $zero, 1 #set it not equal to zero
+#check the first op
+chckop: lbu $t7, 0($a1)
+        beq $t7, $zero, retnum
+        jal strcmp
+        #if v0 is zero, it's a match
+        beq $v0, $zero, gopend
+        
+        #otherwise, increment the number
+        addi $t6, $t6, 1
+        #add to a1 until it's not a space character
+incchck: addi $a1, $a1, 1
+         lbu $t7, 0($a1)
+         beq $t7, $zero, retnum #checked everything, it's a num
+         bgt $t7, $t4, incchck #if it's not a space, keep going
+         
+         #now that it is a space, we go forward one more
+        addi $a1, $a1, 1
+        #and try again
+        j chckop
+
+
+
+retnum: addi $v0, $zero, -1
+        #since it's a number, let's get it. Result will be stored
+        #in $f30
+        #write the ret addr to the stack since we need all 10 temps
+        addi $sp, $sp, -4
+        sw $t9, 0($sp)
+        jal atof
+        lw $ra, 0($sp)
+        jr $ra
+gopend:
+        add $v0, $zero, $t6 #t6 is the op number we were on
+        #v1 is still the return address of the operator, so we leave it
+        add $ra, $t9, $zero #restore the return addr
+        jr $ra
+
+###### END GETOP#######
+
 ######STRCMP AND STRCASECMP#####
 strcmp:
         #a0 = loc of string 1
         #a1 = loc of string 2
         #v0 = 0 if they're the same, nonzero if they're different
         add $t2, $a0, $zero
-        add $t3, $t1, $zero
+        add $t3, $a1, $zero
+        addi $t4, $zero, 32 #ignore leading whitespace
+
+#ignore leading whitespace
+        lbu $t0, 0($t2)
+        lbu $t1, 0($t3)
+
+rmspc: bgt $t0, $t4, rmspc2
+         lbu $t0, 0($t2)
+         j rmspc
+
+rmspc2: bgt $t1, $t4, strcmp2
+        lbu $t1, 0($t3)
+        j rmspc2
+
 strcmp2:
         lbu $t0, 0($t2)
         lbu $t1, 0($t3)
         beq $t0, $zero, endcmp
         beq $t1, $zero, endcmp
+        ble $t0, $t4, endcmp
+        ble $t1, $t4, endcmp
         bne $t0, $t1, endcmp
         addi $t2, $t2, 1
         addi $t3, $t3, 1
         j strcmp2
 endcmp:
-        add $v0, $t0, $t1
+        slt $v0, $t4, $t0
+        slt $t1, $t4, $t1
+        add $v0, $v0, $t1
         add $v1, $t2, $zero #set v1 = end pointer
         jal $ra
 
@@ -330,7 +409,7 @@ cvrt12:
 ##### atof ######
 atof:
         #stuff is in the same position as the sys call.
-        #a0 is the location of the string, a1 is the length
+        #a0 is the location of the string,
         #f30 is the return value.
 
         addi $a3, $zero, 0x20 #terminate on space. Yes I know this isn't a
@@ -541,6 +620,8 @@ timesc: .asciiz "*"
 divc:   .asciiz "/"
 subc:   .asciiz "-"
 expc:   .asciiz "^"
+oprn:   .asciiz "("
+cprn:   .asciiz ")"
 sinc:   .asciiz "s"
 cosc:   .asciiz "c"
 tanc:   .asciiz "t"
@@ -548,3 +629,4 @@ cotc:   .asciiz "o"
 secc:   .asciiz "e"
 cscc:   .asciiz "a"
 quitc:  .asciiz "q"
+allops: .asciiz "+ - * / ^ sin cos tan csc sec cot ( ) quit"
