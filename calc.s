@@ -1,5 +1,4 @@
 #!/usr/bin/spim -f
-# This is a test
 main:
         li $s0, 5#sinc            # Set $s0 to contain the sin character
         li $s1, 6#cosc            # Set $s1 to contain the cos character
