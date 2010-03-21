@@ -1,53 +1,56 @@
 #!/usr/bin/spim -f
 main:
-        li $s0, 5#sinc            # Set $s0 to contain the sin character
-        li $s1, 6#cosc            # Set $s1 to contain the cos character
-        li $s2, 7#tanc            # Set $s2 to contain the tan character
-        li $s3, 8#cotc            # Set $s3 to contain the cot character
-        li $s4, 9#secc            # Set $s4 to contain the sec character
-        li $s5, 10#cscc            # Set $s5 to contain the csc character
-        li $s6, 13#quitc           # Set $s6 to contain the quit character
+       
 
 
-
-char:   li $v0, 8              # set the operation to read_character
+char:   
+        addi $sp, $sp, -8
+        li $v0, 8              # set the operation to read_character
                          # get the operator from the user
-        #addi $sp, $sp, -8
+
         add $a0, $zero, $sp
         li $a1, 8 
         syscall
         jal getop
         move $t1, $v0
         move $s7, $t1
+        addi $sp, $sp, 8
+
         #li $v0, 12
         #syscall                 # clear the newline from the input
         
-        beq $t1, $s6, exit      # If the user enters 'q', exit the program
         
-       # bgt $t7, $zero, skip    # If we have an operand on the stack, read at most one operand
+        li $t2, 13#quitc           # Set $s6 to contain the quit character
+
+        beq $t1, $t2, exit      # If the user enters 'q', exit the program
+        
+        bgt $s0, $zero, skip    # If we have an operand on the stack, read at most one operand
         
         li $v0, 8               # set the operation to read_float
-        addi $sp, $sp, -8
         add $a0, $sp, $zero
         li $a1, 8
         
         syscall                 # get the first operand from the user
-        jal atof
+        jal getop
         addi $sp, $sp, -8       # decrement stack pointer
         s.d $f30, 0($sp)         # store the first operand on the stack
         move $t1, $s7
-skip:   beq $t1, $s0, sin       # perform sin
-        beq $t1, $s1, cos       # perform cos
-        beq $t1, $s2, tan       # perform tan
-        beq $t1, $s3, cot       # perform cot
-        beq $t1, $s4, sec       # perform sec
-        beq $t1, $s5, csc       # perform csc
+skip:   
+        li $t2, 5#sinc            # Set $s0 to contain the sin character
+        li $t3, 6#cosc            # Set $s1 to contain the cos character
+        li $t4, 7#tanc            # Set $s2 to contain the tan character
+        li $t5, 8#cotc            # Set $s3 to contain the cot character
+        li $t6, 9#secc            # Set $s4 to contain the sec character
+        li $t7, 10#cscc            # Set $s5 to contain the csc character
+        move $t1, $s7
 
-        li $s0, 0 #plusc           # Set $s0 to contain the plus character
-        li $s1, 2#timesc          # Set $s1 to contain the times character
-        li $s2, 3#divc            # Set $s2 to contain the divide character
-        li $s3, 1#subc            # Set $s3 to contain the subtract character
-        li $s4, 4#expc            # Set $s4 to contain the power character
+        beq $t1, $t2, sin       # perform sin
+        beq $t1, $t3, cos       # perform cos
+        beq $t1, $t4, tan       # perform tan
+        beq $t1, $t5, cot       # perform cot
+        beq $t1, $t6, sec       # perform sec
+        beq $t1, $t7, csc       # perform csc
+
 
         li $v0, 7               # set the operation to read_float
         li $v0, 8
@@ -55,15 +58,23 @@ skip:   beq $t1, $s0, sin       # perform sin
         add $a0, $sp, $zero
         li $a1, 8
         syscall                 # get the next operand from the user
-        jal atof
+        jal getop
         
         s.d $f30, 0($sp)         # store the second operand on the stack
         move $t1, $s7
-        beq $t1, $s0, plus      # Perform addition
-        beq $t1, $s1, times     # Perform multiplication
-        beq $t1, $s2, divd      # Perform division
-        beq $t1, $s3, subt      # Perform subtraction
-        beq $t1, $s4, exp       # Perform exponentiation
+
+        
+        li $t2, 0 #plusc           # Set $s0 to contain the plus character
+        li $t3, 2#timesc          # Set $s1 to contain the times character
+        li $t4, 3#divc            # Set $s2 to contain the divide character
+        li $t5, 1#subc            # Set $s3 to contain the subtract character
+        li $t6, 4#expc            # Set $s4 to contain the power character
+
+        beq $t1, $t2, plus      # Perform addition
+        beq $t1, $t3, times     # Perform multiplication
+        beq $t1, $t4, divd      # Perform division
+        beq $t1, $t5, subt      # Perform subtraction
+        beq $t1, $t6, exp       # Perform exponentiation
 
         la $a0, bad             # If an illegal character has been entered, alert the user, then try again
         li $v0, 4
@@ -102,9 +113,10 @@ divd:   l.d $f4, 0($sp)         # Get the second operand
 
 subt:   l.d $f4, 0($sp)         # Get the second operand
         addi $sp, $sp, 8
+
         l.d $f6, 0($sp)         # Get the first operand
         addi $sp, $sp, 8
-
+        li $v0, 3
         sub.d $f12, $f6, $f4    # Subtract the two operands
 
         j end                   # Perform all necessary operations after computing the result
@@ -238,7 +250,7 @@ end:    addi $sp, $sp, -8
         la $a0, return
         syscall
         
-        li $t7, 1               # Set the flag
+        li $s0, 1               # Set the flag
         
         j main                  # Continue the read loop
 #### infix parser #######
@@ -324,6 +336,7 @@ retnum: addi $v0, $zero, -1
         sw $t9, 0($sp)
         jal atof
         lw $ra, 0($sp)
+        addi $sp, $sp, 4
         jr $ra
 gopend:
         add $v0, $zero, $t6 #t6 is the op number we were on
@@ -411,8 +424,6 @@ atof:
         #a0 is the location of the string,
         #f30 is the return value.
 
-        addi $a3, $zero, 0x20 #terminate on space. Yes I know this isn't a
-                                #temp, but I'm using all of them
         add $t0, $a0, $zero #p in the sample code
         addi $t1, $zero, 32 #keep going if it's less than this
         lbu $t2, 0($t0)
@@ -449,7 +460,7 @@ cont1:
         #increment stack pointer so I can use it
         #also, set some values to 0
     
-        addi $sp, $sp, -4
+        addi $sp, $sp, -8
         #put 10 in $f14
         addi $t5, $zero, 10
         sw $t5, 0($sp)
@@ -495,7 +506,7 @@ isdigit:
 
 enddig: 
         beq $t2, $zero, enddec
-        beq $t2, $a3, enddec
+        ble $t2, $t1, enddec
         #use t6 as a flag to check if I've done decimals
         bne $t6, $zero, enddec
         #check to see if we've hit a '.'
@@ -514,7 +525,7 @@ enddec:
         #check for E
 testexp:
         beq $t2, $zero, endexp
-        beq $t2, $a3, endexp
+        ble $t2, $t1, endexp
         addi $t5, $zero, 0x45 #E
         beq $t5, $t2, fltexp
         addi $t5, $zero, 0x65 #e
@@ -532,7 +543,7 @@ fltexp:
         j cntexp
 cseneg:
         addi $t4, $zero, 1
-        syscall
+        
 csepos: addi $t0, $t0, 1
 cntexp:
     #now using t6 for n
@@ -600,7 +611,7 @@ retz:
         lwc1 $f30, 0($sp)
         cvt.d.w $f30, $f30
 endatof:
-        addi $sp, $sp, 4 #remove that stack location I used
+        addi $sp, $sp, 8 #remove that stack location I used
         add $v1, $t0, $zero #set v1 to the end pointer
         jr $ra
 
@@ -629,3 +640,4 @@ secc:   .asciiz "e"
 cscc:   .asciiz "a"
 quitc:  .asciiz "q"
 allops: .asciiz "+ - * / ^ sin cos tan csc sec cot ( ) quit"
+
