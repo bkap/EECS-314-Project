@@ -47,10 +47,9 @@ skip:
         beq $t1, $t2, sin       # perform sin
         beq $t1, $t3, cos       # perform cos
         beq $t1, $t4, tan       # perform tan
-        beq $t1, $t5, csc       # perform cot
+        beq $t1, $t5, csc       # perform csc
         beq $t1, $t6, sec       # perform sec
-        beq $t1, $t7, cot       # perform csc
-
+        beq $t1, $t7, cot       # perform cot
 
         li $v0, 7               # set the operation to read_float
         li $v0, 8
@@ -210,36 +209,107 @@ floop:  mov.d $f0, $f2          # Save the current total
         mul.d $f12, $f2, $f12   # multiply integer and fractional exponents
         j end
 
-sin:    l.d $f4, 0($sp)         # Get the operand
+sin:    l.d $f6, 0($sp)         # Get the operand
         addi $sp, $sp, 8
-
+        jal trig
         j end                   # Perform all necessary operations after computing the result
         
-cos:    l.d $f4, 0($sp)         # Get the operand
+cos:    l.d $f6, 0($sp)         # Get the operand
         addi $sp, $sp, 8
-
+        jal trig
+        mov.d $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
-tan:    l.d $f4, 0($sp)         # Get the operand
+tan:    l.d $f6, 0($sp)         # Get the operand
         addi $sp, $sp, 8
-
+        jal trig
+        div.d $f12, $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
-cot:    l.d $f4, 0($sp)         # Get the operand
+cot:    l.d $f6, 0($sp)         # Get the operand
         addi $sp, $sp, 8
-
+        jal trig
+        div.d $f12, $f18, $f12
         j end                   # Perform all necessary operations after computing the result
 
-sec:    l.d $f4, 0($sp)         # Get the operand
+sec:    l.d $f6, 0($sp)         # Get the operand
         addi $sp, $sp, 8
-
+        jal trig
+        div.d $f12, $f8, $f18
         j end                   # Perform all necessary operations after computing the result
 
-csc:    l.d $f4, 0($sp)         # Get the operand
+csc:    l.d $f6, 0($sp)         # Get the operand
         addi $sp, $sp, 8
-
+        jal trig
+        div.d $f12, $f8, $f12
         j end                   # Perform all necessary operations after computing the result
         
+### trig internals ###
+        # Compute sin(x) using a Taylor expansion
+        # Returns sin(x) in $f12, cos(x) in $f18, and 1 in $f8
+        #f0: holds the previous accumulated total
+        #f2: current accumulated total
+        #f4: not used
+        #f6: the argument
+        #f8: used to store constants
+        #f10: counter for factorial
+        #f12: the return value
+        #f14: the current coefficient
+        #f16: the variable term
+        #f18: temporary
+trig:   abs.d   $f18, $f6       # Ensure that the argument can be
+        li.d    $f8, 1.3493037704e10 # represented as a fixed-point word.
+        c.le.d  $f18, $f8
+        bc1t    tcont0
+
+        la      $a0, bad        # If it is too large, throw an error
+        li      $v0, 4          # message and let the user enter new
+        syscall                 # numbers
+        j main
+
+tcont0: li.d $f8, 6.28318530717953072
+        div.d $f18, $f6, $f8    # Convert the argument to a value
+        round.w.d $f18, $f18    # between -pi and pi
+        cvt.d.w $f18, $f18
+        mul.d $f18, $f18, $f8
+        sub.d $f6, $f6, $f18
+        
+        li.d $f2, 0.0           # Set accumulated total to 0
+        li.d $f8, -1.0          # set $f8 to 1
+        li.d $f10, 1.0          # Initialize the factorial counter
+        li.d $f14, 1.0          # Initialize the coefficient
+        li.d $f16, 1.0          # Initialize variable term
+
+tloop:  mov.d $f0, $f2          # Save the current total
+        div.d $f14, $f14, $f10  # divide coefficient by factorial counter
+        sub.d $f10, $f10, $f8   # increment factorial counter
+        mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
+        mul.d $f18, $f14, $f16  # add product to accumulated total
+        add.d $f2, $f2, $f18
+        mul.d $f14, $f14, $f8   # negate the coefficient
+        div.d $f14, $f14, $f10  # divide coefficient by factorial counter
+        sub.d $f10, $f10, $f8   # increment factorial counter
+        mul.d $f16, $f16, $f6   # add to exponent again
+
+        c.eq.d $f0, $f2         # repeat until the current term is below
+        bc1f tloop              # the precision of the total
+        mov.d $f12, $f2         # move the total to the return value
+
+	li.d $f8, 1.0
+        mul.d $f18, $f12, $f12  # Compute the cosine from the sine.
+        sub.d $f18, $f8, $f18   # cos(x)=+/-sqrt(1-sin(x)^2)
+        sqrt.d $f18, $f18       # It's negative iff |x|>pi/2
+        abs.d $f6, $f6
+        li.d $f8, 1.57079632679489662 # This is slightly greater than pi/2
+        c.lt.d $f6, $f8
+        bc1f tneg
+        li.d $f8, 1.0
+        jr $ra
+tneg:   li.d $f8, 0.0
+        sub.d $f18, $f8, $f18
+        li.d $f8, 1.0
+        jr $ra
+
 end:    addi $sp, $sp, -8       
         s.d $f12, 0($sp)        # Push the result onto the stack
         
@@ -738,4 +808,3 @@ secc:   .asciiz "e"
 cscc:   .asciiz "a"
 quitc:  .asciiz "q"
 allops: .asciiz "+ - * / ^ sin cos tan csc sec cot ( ) quit"
-
