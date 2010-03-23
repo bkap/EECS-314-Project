@@ -4,17 +4,17 @@ main:
 
 
 char:   
-        addi $sp, $sp, -8
+        addi $sp, $sp, -16
         li $v0, 8              # set the operation to read_character
                          # get the operator from the user
 
         add $a0, $zero, $sp
-        li $a1, 8 
+        li $a1, 16 
         syscall
         jal getop
         move $t1, $v0
         move $s7, $t1
-        addi $sp, $sp, 8
+        addi $sp, $sp, 16
 
         #li $v0, 12
         #syscall                 # clear the newline from the input
@@ -28,7 +28,7 @@ char:
         
         li $v0, 8               # set the operation to read_float
         add $a0, $sp, $zero
-        li $a1, 8
+        li $a1, 16
         
         syscall                 # get the first operand from the user
         jal getop
@@ -54,12 +54,12 @@ skip:
 
         li $v0, 7               # set the operation to read_float
         li $v0, 8
-        addi $sp, $sp, -8
+        addi $sp, $sp, -16
         add $a0, $sp, $zero
-        li $a1, 8
+        li $a1, 16
         syscall                 # get the next operand from the user
         jal getop
-        
+        addi $sp, $sp, 8
         s.d $f30, 0($sp)         # store the second operand on the stack
         move $t1, $s7
 
@@ -80,7 +80,7 @@ skip:
         li $v0, 4
         syscall
         
-        addi $sp, $sp, 8        # Increment the stack pointer to ignore the operand read after the illegal character
+        addi $sp, $sp, 16        # Increment the stack pointer to ignore the operand read after the illegal character
 
         j main                  # Try reading a character again
 
@@ -366,6 +366,8 @@ infix:
     add $s3, $s2, $zero #s3 will be the top of the number stack
     #s4 = prev action. 
     add $s4, $zero, $zero
+
+
 
 
 #####GETOP ######
