@@ -394,7 +394,7 @@ skp:    lb $t2, 0($a0)
         j skp
 
 
-skpspc: beq $t2, $zero, bad
+skpspc: beq $t2, $zero, prntbad
         bgt $t2, $t0, contss
         addi $a0, $a0, 1
         lb $t2, 0($a0)
@@ -408,13 +408,13 @@ contss:
         sdc1 $f30, 0($sp)
         #move $a0, $v1
         lb $t0, 0($a0)
-        beq $t0, $zero, bad
+        beq $t0, $zero, prntbad
         jal getop
 skp2:   lb $t2, 0($a0)
         ble $t2, $t0, skpspc2
         addi $a0, $a0, 1
         j skp2
-skpspc2: beq $t2, $zero, bad 
+skpspc2: beq $t2, $zero, prntbad 
         bgt $t2, $t0, unstrt
         addi $a0, $a0, 1
         lb $t2, 0($a0)
@@ -422,17 +422,17 @@ skpspc2: beq $t2, $zero, bad
 
 unstrt:
         addi $t0, $zero, -1
-        beq $t0, $v0, bad #it should have an operator now
+        beq $t0, $v0, prntbad #it should have an operator now
         #store the operator in s1
         move $s2, $v0
         #get the number
         addi $t0, $zero, 32
 
-        beq $t0, $zero, bad #need to have something left
+        beq $t0, $zero, prntbad #need to have something left
         jal getop
         #get a number
         addi $t0, $zero, -1
-        bne $t0, $v0, bad
+        bne $t0, $v0, prntbad
         addi $sp, $sp, -8
         sdc1 $f30, 0($sp)
         
@@ -458,7 +458,12 @@ unstrt:
         beq $s0, $t0, sec
         li $t0, 10
         beq $s0, $t0, cot
-        j bad
+        
+prntbad:        
+        la $a0, bad             # If an illegal character has been entered, alert the user, then try again
+        li $v0, 4
+        syscall
+        j main
 
 
 
