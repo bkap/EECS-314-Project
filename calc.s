@@ -1,6 +1,6 @@
 #!/usr/bin/spim -f
 main:
-       
+      j infxln 
 
 
 char:   
@@ -47,9 +47,9 @@ skip:
         beq $t1, $t2, sin       # perform sin
         beq $t1, $t3, cos       # perform cos
         beq $t1, $t4, tan       # perform tan
-        beq $t1, $t5, cot       # perform cot
+        beq $t1, $t5, csc       # perform cot
         beq $t1, $t6, sec       # perform sec
-        beq $t1, $t7, csc       # perform csc
+        beq $t1, $t7, cot       # perform csc
 
 
         li $v0, 7               # set the operation to read_float
@@ -250,7 +250,7 @@ end:    addi $sp, $sp, -8
         la $a0, return
         syscall
         
-        li $s0, 1               # Set the flag
+        #li $s0, 1               # Set the flag
         
         j main                  # Continue the read loop
 #### infix parser #######
@@ -298,6 +298,99 @@ infix:
 
 
 
+#### this is where we are right now####
+infxln:
+        bne $s0, $zero, scndrn
+        addi $sp, $sp, -128
+        add $a0, $zero, $sp
+
+        add $s0, $a0, $zero #keep track of this
+        j infxlncnt
+scndrn:
+        add $a0, $zero, $s0
+
+infxlncnt:
+        li $v0, 8              # set the operation to read_character
+                         # get the operator from the user
+        li $a1, 128
+        syscall
+        jal getop
+        addi $t0, $zero, 13 #if the first word is quit, exit
+        beq $v0, $t0, exit
+        addi $t0, $zero, 32
+skp:    lb $t2, 0($a0)
+        ble $t2, $t0, skpspc
+        addi $a0, $a0, 1
+        j skp
+
+
+skpspc: beq $t2, $zero, bad
+        bgt $t2, $t0, contss
+        addi $a0, $a0, 1
+        lb $t2, 0($a0)
+        j skpspc
+
+contss:
+        addi $t0, $zero, -1 #if the first word is a number, prepare for operand
+        bne $v0, $t0, unstrt #unary start
+        
+        addi $sp, $sp, -8
+        sdc1 $f30, 0($sp)
+        #move $a0, $v1
+        lb $t0, 0($a0)
+        beq $t0, $zero, bad
+        jal getop
+skp2:   lb $t2, 0($a0)
+        ble $t2, $t0, skpspc2
+        addi $a0, $a0, 1
+        j skp2
+skpspc2: beq $t2, $zero, bad 
+        bgt $t2, $t0, unstrt
+        addi $a0, $a0, 1
+        lb $t2, 0($a0)
+        j skpspc2
+
+unstrt:
+        addi $t0, $zero, -1
+        beq $t0, $v0, bad #it should have an operator now
+        #store the operator in s1
+        move $s2, $v0
+        #get the number
+        addi $t0, $zero, 32
+
+        beq $t0, $zero, bad #need to have something left
+        jal getop
+        #get a number
+        addi $t0, $zero, -1
+        bne $t0, $v0, bad
+        addi $sp, $sp, -8
+        sdc1 $f30, 0($sp)
+        
+        li $t0, 0 #add
+        beq $s2, $t0, plus
+        li $t0, 1 #sub
+        beq $s2, $t0, subt
+        li $t0, 2 #times
+        beq $s2, $t0, times
+        li $t0, 3 #div
+        beq $s2, $t0, divd
+        li $t0, 4 #exp
+        beq $s2, $t0, exp
+        li $t0, 5 #sin
+        beq $s2, $t0, sin
+        li $t0, 6
+        beq $s2, $t0, cos
+        li $t0, 7
+        beq $s0, $t0, tan
+        li $t0, 8
+        beq $s0, $t0, csc
+        li $t0, 9
+        beq $s0, $t0, sec
+        li $t0, 10
+        beq $s0, $t0, cot
+        j bad
+
+
 
 #####GETOP ######
 # string to check = $a0, space or null term string
@@ -305,12 +398,13 @@ infix:
 # sets $v0 to the number. Puts the number in $f30 if it's a number
 getop:  add $t6, $zero, $zero
         add $t9, $ra, $zero
+        addi $t8, $zero, 0x20
         #start op
         la $a1, allops
         addi $v0, $zero, 1 #set it not equal to zero
 #check the first op
 chckop: lbu $t7, 0($a1)
-        beq $t7, $zero, retnum
+        blt $t7, $t8, retnum
         jal strcmp
         #if v0 is zero, it's a match
         beq $v0, $zero, gopend
@@ -343,6 +437,7 @@ retnum: addi $v0, $zero, -1
 gopend:
         add $v0, $zero, $t6 #t6 is the op number we were on
         #v1 is still the return address of the operator, so we leave it
+        addi $v1, $v1, 1
         add $ra, $t9, $zero #restore the return addr
         jr $ra
 
@@ -626,6 +721,7 @@ exit:   li $v0, 10              # Quit the program
         .data
 op:     .space 5                # Allocate 2 bytes for the operator (one character and null)
 bad:    .asciiz "Illegal character entered, try again.\n"
+debug: .asciiz "debug statement\n"
 return: .asciiz "\n"
 plusc:  .asciiz "+"
 timesc: .asciiz "*"
