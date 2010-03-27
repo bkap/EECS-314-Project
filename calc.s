@@ -1,48 +1,140 @@
 #!/usr/bin/spim -f
 main:
-      j infxln 
+      #j infxln 
+        li $v0, 8               # set the operation to read_string
+        li $a1, 128
+        la $a0, inp
+        syscall                 # get the input
+        move $s7, $a0
+        
+        # Create a number stack
+        add $s2, $sp, $zero     # $s2 is top of the number stack
+        addi $sp, $sp, -64     # Space for 8 doubles
+        add $s3, $s2, $zero     # $s3 is bottom of number stack
+        
+rpn:    li $t0, 16
+        li $t1, 0
+        li $t3, 32              # ASCII space = 32
+        li $t5, 10
+        la $a1, op
+        
+rpnl:   add $t2, $t1, $s7
+        add $t4, $t1, $a1
+        lb $t2, 0($t2)          # $t2 contains the current character
+        beq $t0, $t1, rpnpa
+        ble $t2, $t3, rpnpa
+        sb $t2, 0($t4)          # Store the current character in a string
+        addi $t1, $t1, 1
+        j rpnl
+        
+rpnpa:  li $t2, 0
+        add $t3, $t1, $a1
+        sb $t2, 0($t3)         # Store the null character
+        li $t2, 1
+        add $t3, $t1, $t2
+        add $s7, $s7, $t3
+        
+        la $a0, quop            # Quit
+        jal strcmp
+        beq $v0, 0, exit
+        
+        la $a0, plop            # Addition
+        jal strcmp
+        beq $v0, 0, plus
+        
+        la $a0, miop            # Subtraction
+        jal strcmp
+        beq $v0, 0, subt
+        
+        la $a0, tiop            # Multiplication
+        jal strcmp
+        beq $v0, 0, times
+        
+        la $a0, diop            # Division
+        jal strcmp
+        beq $v0, 0, divd
+        
+        la $a0, exop            # Exponentiation
+        jal strcmp
+        beq $v0, 0, exp
+        
+        la $a0, siop            # Sine
+        jal strcmp
+        beq $v0, 0, sin
+        
+        la $a0, coop            # Cosine
+        jal strcmp
+        beq $v0, 0, cos
+        
+        la $a0, taop            # Tangent
+        jal strcmp
+        beq $v0, 0, tan
+        
+        la $a0, csop            # Cosecant
+        jal strcmp
+        beq $v0, 0, csc
+        
+        la $a0, seop            # Secant
+        jal strcmp
+        beq $v0, 0, sec
+        
+        la $a0, ctop            # Cotangent
+        jal strcmp
+        beq $v0, 0, cot
+        
+        move $a0, $a1
+        jal atof
+        addi $s3, $s3, -8
+        s.d $f30, 0($s3)
+        
+        j rpn
+        
 
-plus:   l.d $f4, 0($sp)         # Get the second operand
-        addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the first operand
-        addi $sp, $sp, 8
+        li $v0, 10
+        syscall
+        
+
+plus:   l.d $f4, 0($s3)         # Get the second operand
+        addi $s3, $s3, 8
+        l.d $f6, 0($s3)         # Get the first operand
+        addi $s3, $s3, 8
 
         add.d $f12, $f4, $f6    # Add the two operands
         
         j end                   # Perform all necessary operations after computing the result
 
-times:  l.d $f4, 0($sp)         # Get the second operand
-        addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the first operand
-        addi $sp, $sp, 8
+times:  l.d $f4, 0($s3)         # Get the second operand
+        addi $s3, $s3, 8
+        l.d $f6, 0($s3)         # Get the first operand
+        addi $s3, $s3, 8
 
         mul.d $f12, $f4, $f6    # Multiply the two operands
         
         j end                   # Perform all necessary operations after computing the result
 
-divd:   l.d $f4, 0($sp)         # Get the second operand
-        addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the first operand
-        addi $sp, $sp, 8
+divd:   l.d $f4, 0($s3)         # Get the second operand
+        addi $s3, $s3, 8
+        l.d $f6, 0($s3)         # Get the first operand
+        addi $s3, $s3, 8
 
         div.d $f12, $f6, $f4    # Divide the two operands
 
         j end                   # Perform all necessary operations after computing the result
 
-subt:   l.d $f4, 0($sp)         # Get the second operand
-        addi $sp, $sp, 8
+subt:   l.d $f4, 0($s3)         # Get the second operand
+        addi $s3, $s3, 8
 
-        l.d $f6, 0($sp)         # Get the first operand
-        addi $sp, $sp, 8
-        li $v0, 3
+        l.d $f6, 0($s3)         # Get the first operand
+        addi $s3, $s3, 8
+        
         sub.d $f12, $f6, $f4    # Subtract the two operands
 
         j end                   # Perform all necessary operations after computing the result
 
-exp:    l.d $f4, 0($sp)         # Get the second operand
-        addi $sp, $sp, 8
-        l.d $f6, 0($sp)         # Get the first operand
-        addi $sp, $sp, 8
+exp:    l.d $f4, 0($s3)         # Get the second operand
+        addi $s3, $s3, 8
+        l.d $f6, 0($s3)         # Get the first operand
+        addi $s3, $s3, 8
         
         li.d $f12, 0.0          # Set $f12 to zero
         c.eq.d $f6, $f12        # Check if the base is 0
@@ -128,37 +220,37 @@ floop:  mov.d $f0, $f2          # Save the current total
         mul.d $f12, $f2, $f12   # multiply integer and fractional exponents
         j end
 
-sin:    l.d $f6, 0($sp)         # Get the operand
-        addi $sp, $sp, 8
+sin:    l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
         jal trig
         j end                   # Perform all necessary operations after computing the result
         
-cos:    l.d $f6, 0($sp)         # Get the operand
-        addi $sp, $sp, 8
+cos:    l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
         jal trig
         mov.d $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
-tan:    l.d $f6, 0($sp)         # Get the operand
-        addi $sp, $sp, 8
+tan:    l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
         jal trig
         div.d $f12, $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
-cot:    l.d $f6, 0($sp)         # Get the operand
-        addi $sp, $sp, 8
+cot:    l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
         jal trig
         div.d $f12, $f18, $f12
         j end                   # Perform all necessary operations after computing the result
 
-sec:    l.d $f6, 0($sp)         # Get the operand
-        addi $sp, $sp, 8
+sec:    l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
         jal trig
         div.d $f12, $f8, $f18
         j end                   # Perform all necessary operations after computing the result
 
-csc:    l.d $f6, 0($sp)         # Get the operand
-        addi $sp, $sp, 8
+csc:    l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
         jal trig
         div.d $f12, $f8, $f12
         j end                   # Perform all necessary operations after computing the result
@@ -229,8 +321,8 @@ tneg:   li.d $f8, 0.0
         li.d $f8, 1.0
         jr $ra
 
-end:    addi $sp, $sp, -8       
-        s.d $f12, 0($sp)        # Push the result onto the stack
+end:    addi $s3, $s3, -8       
+        s.d $f12, 0($s3)        # Push the result onto the stack
         
         li $v0, 3               # Print the result
         syscall
@@ -239,9 +331,7 @@ end:    addi $sp, $sp, -8
         la $a0, return
         syscall
         
-        #li $s0, 1               # Set the flag
-        
-        j main                  # Continue the read loop
+        j rpn                  # Continue the read loop
 #### infix parser #######
     #op table:
     #+ = 0
@@ -712,8 +802,28 @@ exit:   li $v0, 10              # Quit the program
         syscall
 
         .data
-op:     .space 5                # Allocate 2 bytes for the operator (one character and null)
+op:     .space 17                # Allocate 17 bytes for a number (16 digits, 1 null)
 bad:    .asciiz "Illegal character entered, try again.\n"
-debug: .asciiz "debug statement\n"
+debug:  .asciiz "debug statement\n"
 return: .asciiz "\n"
+plop:   .asciiz "+"
+miop:   .asciiz "-"
+tiop:   .asciiz "*"
+diop:   .asciiz "/"
+exop:   .asciiz "^"
+siop:   .asciiz "sin"
+coop:   .asciiz "cos"
+taop:   .asciiz "tan"
+csop:   .asciiz "csc"
+seop:   .asciiz "sec"
+ctop:   .asciiz "cot"
+quop:   .asciiz "quit"
+asiop:  .asciiz "asin"
+acoop:  .asciiz "acos"
+ataop:  .asciiz "atan"
+acsop:  .asciiz "acos"
+aseop:  .asciiz "asec"
+actop:  .asciiz "acot"
+lgop:   .asciiz "log"
 allops: .asciiz "+ - * / ^ sin cos tan csc sec cot asin acos atan acsc asec acot ( ) quit"
+inp:    .space 129
