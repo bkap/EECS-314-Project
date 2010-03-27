@@ -2,87 +2,6 @@
 main:
       j infxln 
 
-
-char:   
-        addi $sp, $sp, -16
-        li $v0, 8              # set the operation to read_character
-                         # get the operator from the user
-
-        add $a0, $zero, $sp
-        li $a1, 16 
-        syscall
-        jal getop
-        move $t1, $v0
-        move $s7, $t1
-        addi $sp, $sp, 16
-
-        #li $v0, 12
-        #syscall                 # clear the newline from the input
-        
-        
-        li $t2, 13#quitc           # Set $s6 to contain the quit character
-
-        beq $t1, $t2, exit      # If the user enters 'q', exit the program
-        
-        bgt $s0, $zero, skip    # If we have an operand on the stack, read at most one operand
-        
-        li $v0, 8               # set the operation to read_float
-        add $a0, $sp, $zero
-        li $a1, 16
-        
-        syscall                 # get the first operand from the user
-        jal getop
-        addi $sp, $sp, -8       # decrement stack pointer
-        s.d $f30, 0($sp)         # store the first operand on the stack
-        move $t1, $s7
-skip:   
-        li $t2, 5#sinc            # Set $s0 to contain the sin character
-        li $t3, 6#cosc            # Set $s1 to contain the cos character
-        li $t4, 7#tanc            # Set $s2 to contain the tan character
-        li $t5, 8#cotc            # Set $s3 to contain the cot character
-        li $t6, 9#secc            # Set $s4 to contain the sec character
-        li $t7, 10#cscc            # Set $s5 to contain the csc character
-        move $t1, $s7
-
-        beq $t1, $t2, sin       # perform sin
-        beq $t1, $t3, cos       # perform cos
-        beq $t1, $t4, tan       # perform tan
-        beq $t1, $t5, csc       # perform csc
-        beq $t1, $t6, sec       # perform sec
-        beq $t1, $t7, cot       # perform cot
-
-        li $v0, 7               # set the operation to read_float
-        li $v0, 8
-        addi $sp, $sp, -16
-        add $a0, $sp, $zero
-        li $a1, 16
-        syscall                 # get the next operand from the user
-        jal getop
-        addi $sp, $sp, 8
-        s.d $f30, 0($sp)         # store the second operand on the stack
-        move $t1, $s7
-
-        
-        li $t2, 0 #plusc           # Set $s0 to contain the plus character
-        li $t3, 2#timesc          # Set $s1 to contain the times character
-        li $t4, 3#divc            # Set $s2 to contain the divide character
-        li $t5, 1#subc            # Set $s3 to contain the subtract character
-        li $t6, 4#expc            # Set $s4 to contain the power character
-
-        beq $t1, $t2, plus      # Perform addition
-        beq $t1, $t3, times     # Perform multiplication
-        beq $t1, $t4, divd      # Perform division
-        beq $t1, $t5, subt      # Perform subtraction
-        beq $t1, $t6, exp       # Perform exponentiation
-
-        la $a0, bad             # If an illegal character has been entered, alert the user, then try again
-        li $v0, 4
-        syscall
-        
-        addi $sp, $sp, 16        # Increment the stack pointer to ignore the operand read after the illegal character
-
-        j main                  # Try reading a character again
-
 plus:   l.d $f4, 0($sp)         # Get the second operand
         addi $sp, $sp, 8
         l.d $f6, 0($sp)         # Get the first operand
@@ -798,18 +717,4 @@ op:     .space 5                # Allocate 2 bytes for the operator (one charact
 bad:    .asciiz "Illegal character entered, try again.\n"
 debug: .asciiz "debug statement\n"
 return: .asciiz "\n"
-plusc:  .asciiz "+"
-timesc: .asciiz "*"
-divc:   .asciiz "/"
-subc:   .asciiz "-"
-expc:   .asciiz "^"
-oprn:   .asciiz "("
-cprn:   .asciiz ")"
-sinc:   .asciiz "s"
-cosc:   .asciiz "c"
-tanc:   .asciiz "t"
-cotc:   .asciiz "o"
-secc:   .asciiz "e"
-cscc:   .asciiz "a"
-quitc:  .asciiz "q"
-allops: .asciiz "+ - * / ^ sin cos tan csc sec cot ( ) quit"
+allops: .asciiz "+ - * / ^ sin cos tan csc sec cot asin acos atan acsc asec acot ( ) quit"
