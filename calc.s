@@ -27,9 +27,11 @@ rpnl:   add $t2, $t1, $s7
         addi $t1, $t1, 1
         j rpnl
         
-rpnpa:  li $t2, 0
+rpnpa:  beq $t1, $zero, res    # If there is no more input, print the result
+        li $t2, 0
         add $t3, $t1, $a1
         sb $t2, 0($t3)         # Store the null character
+        
         li $t2, 1
         add $t3, $t1, $t2
         add $s7, $s7, $t3
@@ -306,7 +308,7 @@ tloop:  mov.d $f0, $f2          # Save the current total
         bc1f tloop              # the precision of the total
         mov.d $f12, $f2         # move the total to the return value
 
-	li.d $f8, 1.0
+	    li.d $f8, 1.0
         mul.d $f18, $f12, $f12  # Compute the cosine from the sine.
         sub.d $f18, $f8, $f18   # cos(x)=+/-sqrt(1-sin(x)^2)
         sqrt.d $f18, $f18       # It's negative iff |x|>pi/2
@@ -324,14 +326,16 @@ tneg:   li.d $f8, 0.0
 end:    addi $s3, $s3, -8       
         s.d $f12, 0($s3)        # Push the result onto the stack
         
-        li $v0, 3               # Print the result
-        syscall
-
-        li $v0, 4               # Print a newline
-        la $a0, return
-        syscall
-        
         j rpn                  # Continue the read loop
+        
+res:    l.d $f12, 0($s3)         # Get the result
+        addi $s3, $s3, 8
+        li $v0, 3
+        syscall
+        la $a0, return
+        li $v0, 4
+        syscall
+        j main
 #### infix parser #######
     #op table:
     #+ = 0
