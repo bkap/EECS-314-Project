@@ -59,6 +59,10 @@ rpnpa:  beq $t1, $zero, res    # If there is no more input, print the result
         jal strcmp
         beq $v0, 0, exp
         
+        la $a0, lgop            # Log_2
+        jal strcmp
+        beq $v0, 0, log
+        
         la $a0, siop            # Sine
         jal strcmp
         beq $v0, 0, sin
@@ -82,6 +86,30 @@ rpnpa:  beq $t1, $zero, res    # If there is no more input, print the result
         la $a0, ctop            # Cotangent
         jal strcmp
         beq $v0, 0, cot
+        
+        la $a0, asiop            # ArcSine
+        jal strcmp
+        beq $v0, 0, asin
+        
+        la $a0, acoop            # ArcCosine
+        jal strcmp
+        beq $v0, 0, acos
+        
+        la $a0, ataop            # ArcTangent
+        jal strcmp
+        beq $v0, 0, atan
+        
+        la $a0, acsop            # ArcCosecant
+        jal strcmp
+        beq $v0, 0, acsc
+        
+        la $a0, aseop            # ArcSecant
+        jal strcmp
+        beq $v0, 0, asec
+        
+        la $a0, actop            # ArcCotangent
+        jal strcmp
+        beq $v0, 0, acot
         
         move $a0, $a1
         jal atof
@@ -220,6 +248,10 @@ floop:  mov.d $f0, $f2          # Save the current total
         bc1f floop              # the precision of the total
         mul.d $f12, $f2, $f12   # multiply integer and fractional exponents
         j end
+        
+log:    l.d $f6, 0($s3)         # Get the operand
+        mov.d $f12, $f6         # Make log do nothing right now
+        j end                   # Perform all necessary operations after computing the result
 
 sin:    l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
@@ -251,6 +283,41 @@ sec:    l.d $f6, 0($s3)         # Get the operand
         j end                   # Perform all necessary operations after computing the result
 
 csc:    l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
+        jal trig
+        div.d $f12, $f8, $f12
+        j end                   # Perform all necessary operations after computing the result
+        
+asin:   l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
+        jal trig
+        j end                   # Perform all necessary operations after computing the result
+        
+acos:   l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
+        jal trig
+        mov.d $f12, $f18
+        j end                   # Perform all necessary operations after computing the result
+
+atan:   l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
+        jal trig
+        div.d $f12, $f12, $f18
+        j end                   # Perform all necessary operations after computing the result
+
+acot:   l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
+        jal trig
+        div.d $f12, $f18, $f12
+        j end                   # Perform all necessary operations after computing the result
+
+asec:   l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
+        jal trig
+        div.d $f12, $f8, $f18
+        j end                   # Perform all necessary operations after computing the result
+
+acsc:   l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         div.d $f12, $f8, $f12
