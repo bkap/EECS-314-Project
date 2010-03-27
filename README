@@ -1,22 +1,15 @@
 PROJECT:
 
 * Floating point calculator
-    * capable of 4 basic operations, exponents, and trig functions
-    * prefix notation
+    * capable of 4 basic operations, exponents, trig functions, inverse trig functions, and logarithms
+    * postfix notation
     * double precision
 
 
 Things to figure out:
-    1) Need to find a way to get from the normal registers to the float
-    registers for calculating the number. The ops work with either one set of
-    registers or the other, so I don't know how to get between them other than
-    writing the bits I need to memory with sw and reading it with ldcl
-
-    2) Need to discuss the use of the floating point registers. The best way to
-    do this would be to treat each operation as a function. In order for this
-    to work, we need to separate the 32 registers into temps, saves, func args,
-    and return values (similar to the way the normal registers are divided,
-    except we don't lose 1/4th of the registers)
+    1) Need to determine when the user enters malformed input
+    
+    2) Need to handle the user entering numbers with more than 16 characters
 
     3) Need to come up with a procedure for errors. What do we display in the
     event of a NaN, +/- infinity, div by 0, and so on. 
