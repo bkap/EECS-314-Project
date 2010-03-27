@@ -299,10 +299,9 @@ scndrn:
         add $a0, $zero, $s0
 
 infxlncnt:
-        li $v0, 8              # set the operation to read_character
-                         # get the operator from the user
+        li $v0, 8              # set the operation to read_string
         li $a1, 128
-        syscall
+        syscall                 # get the operator from the user
         jal getop
         addi $t0, $zero, 13 #if the first word is quit, exit
         beq $v0, $t0, exit
@@ -324,7 +323,7 @@ contss:
         bne $v0, $t0, unstrt #unary start
         
         addi $sp, $sp, -8
-        sdc1 $f30, 0($sp)
+        s.d $f30, 0($sp)
         #move $a0, $v1
         lb $t0, 0($a0)
         beq $t0, $zero, prntbad
