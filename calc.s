@@ -636,5 +636,4 @@ acsop:  .asciiz "acos"
 aseop:  .asciiz "asec"
 actop:  .asciiz "acot"
 lgop:   .asciiz "log"
-allops: .asciiz "+ - * / ^ sin cos tan csc sec cot asin acos atan acsc asec acot ( ) quit"
 inp:    .space 129
