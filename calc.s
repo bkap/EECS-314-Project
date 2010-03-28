@@ -11,7 +11,7 @@ main:
         addi $sp, $sp, -64     # Space for 8 doubles
         add $s3, $s2, $zero     # $s3 is bottom of number stack
         
-rpn:    li $t0, 16
+rpn:    li $t0, 21
         li $t1, 0
         li $t3, 32              # ASCII space = 32
         li $t5, 10
@@ -417,9 +417,9 @@ strcmp:
         lbu $t0, 0($t2)
         lbu $t1, 0($t3)
 
-rmspc: bgt $t0, $t4, rmspc2
-         lbu $t0, 0($t2)
-         j rmspc
+rmspc:  bgt $t0, $t4, rmspc2
+        lbu $t0, 0($t2)
+        j rmspc
 
 rmspc2: bgt $t1, $t4, strcmp2
         lbu $t1, 0($t3)
@@ -487,11 +487,12 @@ atof:
         lbu $t2, 0($t0)
 
     #while isspace p++
-isspace: bgt $t2, $t1, endspace
-         beq $t2, $zero, retz #if it ends in a null a null, return 0
-         addi $t0, $t0, 1
-         lbu $t2, 0($t0)
-         j isspace
+isspace:
+        bgt $t2, $t1, endspace
+        beq $t2, $zero, retz #if it ends in a null a null, return 0
+        addi $t0, $t0, 1
+        lbu $t2, 0($t0)
+        j isspace
 endspace:
         add $t4, $zero, $zero #t4 = negative
         addi $t5, $zero, 0x2D #check for asii minus
@@ -499,9 +500,10 @@ endspace:
         addi $t4, $zero, 1
         addi $t0, $t0, 1 #p++
         j cont1
-SKIPNEG: addi $t5, $zero, 0x2B #check for ascii plus
-         bne $t2, $t5, cont1
-         addi $t0, $t0, 1 #p++
+SKIPNEG: 
+        addi $t5, $zero, 0x2B #check for ascii plus
+        bne $t2, $t5, cont1
+        addi $t0, $t0, 1 #p++
 cont1: 
         #f30 = num
         #t6 = flag
@@ -605,7 +607,7 @@ cseneg:
 csepos: addi $t0, $t0, 1
 cntexp:
     #now using t6 for n
-    add $t6, $zero, $zero
+        add $t6, $zero, $zero
 isdig2: 
         #exponent stored in $t7
         lbu $t2, 0($t0)
@@ -680,7 +682,7 @@ exit:   li $v0, 10              # Quit the program
         syscall
 
         .data
-op:     .space 17                # Allocate 17 bytes for a number (16 digits, 1 null)
+op:     .space 21                # Allocate 21 bytes for a number (20 digits, 1 null)
 bad:    .asciiz "Illegal character entered, try again.\n"
 debug:  .asciiz "debug statement\n"
 return: .asciiz "\n"
@@ -703,4 +705,4 @@ acsop:  .asciiz "acos"
 aseop:  .asciiz "asec"
 actop:  .asciiz "acot"
 lgop:   .asciiz "log"
-inp:    .space 129
+inp:    .space 501
