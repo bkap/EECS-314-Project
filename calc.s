@@ -8,7 +8,7 @@ main:
         
         # Create a number stack
         add $s2, $sp, $zero     # $s2 is top of the number stack
-        addi $sp, $sp, -64     # Space for 8 doubles
+        addi $sp, $sp, -128     # Space for 16 doubles
         add $s3, $s2, $zero     # $s3 is bottom of number stack
         
 rpn:    li $t0, 21
@@ -113,18 +113,28 @@ rpnpa:  beq $t1, $zero, res    # If there is no more input, print the result
         
         move $a0, $a1
         jal atof
+        beq $s3, $sp, full
         addi $s3, $s3, -8
         s.d $f30, 0($s3)
         
         j rpn
-        
 
-        li $v0, 10
+full:   la $a0, fulls
+        li $v0, 4
         syscall
         
+        j main
+        
+malf:   la $a0, malfs
+        li $v0, 4
+        syscall
+        
+        j main
 
-plus:   l.d $f4, 0($s3)         # Get the second operand
+plus:   beq $s3, $s2, malf      # Malformed input
+        l.d $f4, 0($s3)         # Get the second operand
         addi $s3, $s3, 8
+        beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the first operand
         addi $s3, $s3, 8
 
@@ -132,8 +142,10 @@ plus:   l.d $f4, 0($s3)         # Get the second operand
         
         j end                   # Perform all necessary operations after computing the result
 
-times:  l.d $f4, 0($s3)         # Get the second operand
+times:  beq $s3, $s2, malf      # Malformed input
+        l.d $f4, 0($s3)         # Get the second operand
         addi $s3, $s3, 8
+        beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the first operand
         addi $s3, $s3, 8
 
@@ -141,8 +153,10 @@ times:  l.d $f4, 0($s3)         # Get the second operand
         
         j end                   # Perform all necessary operations after computing the result
 
-divd:   l.d $f4, 0($s3)         # Get the second operand
+divd:   beq $s3, $s2, malf      # Malformed input
+        l.d $f4, 0($s3)         # Get the second operand
         addi $s3, $s3, 8
+        beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the first operand
         addi $s3, $s3, 8
 
@@ -150,9 +164,10 @@ divd:   l.d $f4, 0($s3)         # Get the second operand
 
         j end                   # Perform all necessary operations after computing the result
 
-subt:   l.d $f4, 0($s3)         # Get the second operand
+subt:   beq $s3, $s2, malf      # Malformed input
+        l.d $f4, 0($s3)         # Get the second operand
         addi $s3, $s3, 8
-
+        beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the first operand
         addi $s3, $s3, 8
         
@@ -160,8 +175,10 @@ subt:   l.d $f4, 0($s3)         # Get the second operand
 
         j end                   # Perform all necessary operations after computing the result
 
-exp:    l.d $f4, 0($s3)         # Get the second operand
+exp:    beq $s3, $s2, malf      # Malformed input
+        l.d $f4, 0($s3)         # Get the second operand
         addi $s3, $s3, 8
+        beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the first operand
         addi $s3, $s3, 8
         
@@ -249,75 +266,89 @@ floop:  mov.d $f0, $f2          # Save the current total
         mul.d $f12, $f2, $f12   # multiply integer and fractional exponents
         j end
         
-log:    l.d $f6, 0($s3)         # Get the operand
+log:    beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
+        addi $s3, $s3, 8
         mov.d $f12, $f6         # Make log do nothing right now
         j end                   # Perform all necessary operations after computing the result
 
-sin:    l.d $f6, 0($s3)         # Get the operand
+sin:    beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         j end                   # Perform all necessary operations after computing the result
         
-cos:    l.d $f6, 0($s3)         # Get the operand
+cos:    beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         mov.d $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
-tan:    l.d $f6, 0($s3)         # Get the operand
+tan:    beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         div.d $f12, $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
-cot:    l.d $f6, 0($s3)         # Get the operand
+cot:    beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         div.d $f12, $f18, $f12
         j end                   # Perform all necessary operations after computing the result
 
-sec:    l.d $f6, 0($s3)         # Get the operand
+sec:    beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         div.d $f12, $f8, $f18
         j end                   # Perform all necessary operations after computing the result
 
-csc:    l.d $f6, 0($s3)         # Get the operand
+csc:    beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         div.d $f12, $f8, $f12
         j end                   # Perform all necessary operations after computing the result
         
-asin:   l.d $f6, 0($s3)         # Get the operand
+asin:   beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         j end                   # Perform all necessary operations after computing the result
         
-acos:   l.d $f6, 0($s3)         # Get the operand
+acos:   beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         mov.d $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
-atan:   l.d $f6, 0($s3)         # Get the operand
+atan:   beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         div.d $f12, $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
-acot:   l.d $f6, 0($s3)         # Get the operand
+acot:   beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         div.d $f12, $f18, $f12
         j end                   # Perform all necessary operations after computing the result
 
-asec:   l.d $f6, 0($s3)         # Get the operand
+asec:   beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         div.d $f12, $f8, $f18
         j end                   # Perform all necessary operations after computing the result
 
-acsc:   l.d $f6, 0($s3)         # Get the operand
+acsc:   beq $s3, $s2, malf      # Malformed input
+        l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         jal trig
         div.d $f12, $f8, $f12
@@ -684,6 +715,8 @@ exit:   li $v0, 10              # Quit the program
         .data
 op:     .space 21                # Allocate 21 bytes for a number (20 digits, 1 null)
 bad:    .asciiz "Illegal character entered, try again.\n"
+fulls:  .asciiz "The number stack is full. The calculator will now be reset.\n"
+malfs:  .asciiz "You have entered too few operands to complete the requested operations. The calculator will now be reset\n"
 debug:  .asciiz "debug statement\n"
 return: .asciiz "\n"
 plop:   .asciiz "+"
