@@ -114,6 +114,8 @@ rpnpa:  beq $t1, $zero, res    # If there is no more input, print the result
         move $a0, $a1
         jal atof
         beq $s3, $sp, full
+        li $t0, 1
+        beq $v0, $t0, prbad
         addi $s3, $s3, -8
         s.d $f30, 0($s3)
         
@@ -126,6 +128,12 @@ full:   la $a0, fulls
         j main
         
 malf:   la $a0, malfs
+        li $v0, 4
+        syscall
+        
+        j main
+        
+prbad:  la $a0, bad
         li $v0, 4
         syscall
         
@@ -696,7 +704,9 @@ cntscl:
         sra $t6, $t6, 1
         mul.d $f14, $f14, $f14
         j scale
-        error: #need to take care of error handeling later
+        
+error:  li $v0, 1           # Return 1 to indicate an error
+        jr $ra
 retz:
         sw $zero, 0($sp)
         lwc1 $f30, 0($sp)
@@ -714,9 +724,9 @@ exit:   li $v0, 10              # Quit the program
 
         .data
 op:     .space 21                # Allocate 21 bytes for a number (20 digits, 1 null)
-bad:    .asciiz "Illegal character entered, try again.\n"
+bad:    .asciiz "You have entered an illegal operand.  The calculator will now be reset.\n"
 fulls:  .asciiz "The number stack is full. The calculator will now be reset.\n"
-malfs:  .asciiz "You have entered too few operands to complete the requested operations. The calculator will now be reset\n"
+malfs:  .asciiz "You have entered too few operands to complete the requested operations. The calculator will now be reset.\n"
 debug:  .asciiz "debug statement\n"
 return: .asciiz "\n"
 plop:   .asciiz "+"

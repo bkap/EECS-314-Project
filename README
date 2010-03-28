@@ -7,11 +7,10 @@ PROJECT:
 
 
 Things to figure out:
-    1) Need to determine when the user enters something that isn't a number or allowed operand
     
-    2) Need to handle the user entering numbers with more than 20 characters
+    1) Need to handle the user entering numbers with more than 20 characters
 
-    3) Need to come up with a procedure for errors. What do we display in the
+    2) Need to come up with a procedure for errors. What do we display in the
     event of a NaN, +/- infinity, div by 0, and so on. 
 
 
