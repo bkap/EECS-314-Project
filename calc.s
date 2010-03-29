@@ -14,7 +14,6 @@ main:
 rpn:    li $t0, 21
         li $t1, 0
         li $t3, 32              # ASCII space = 32
-        li $t5, 10
         la $a1, op
         
 rpnl:   add $t2, $t1, $s7
@@ -26,14 +25,14 @@ rpnl:   add $t2, $t1, $s7
         addi $t1, $t1, 1
         j rpnl
         
-rpnpa:  beq $t1, $zero, res    # If there is no more input, print the result
+rpnpa:  beq $t1, $zero, res     # If there is no more input, print the result
         li $t2, 0
         add $t3, $t1, $a1
-        sb $t2, 0($t3)         # Store the null character
+        sb $t2, 0($t3)          # Store the null character
         
         li $t2, 1
         add $t3, $t1, $t2
-        add $s7, $s7, $t3
+        add $s7, $s7, $t3       # Set up the address for the next read
         
         la $a0, quop            # Quit
         jal strcmp
@@ -59,7 +58,7 @@ rpnpa:  beq $t1, $zero, res    # If there is no more input, print the result
         jal strcmp
         beq $v0, 0, exp
         
-        la $a0, lgop            # Log_2
+        la $a0, lgop            # Log
         jal strcmp
         beq $v0, 0, log
         
@@ -87,53 +86,53 @@ rpnpa:  beq $t1, $zero, res    # If there is no more input, print the result
         jal strcmp
         beq $v0, 0, cot
         
-        la $a0, asiop            # ArcSine
+        la $a0, asiop           # ArcSine
         jal strcmp
         beq $v0, 0, asin
         
-        la $a0, acoop            # ArcCosine
+        la $a0, acoop           # ArcCosine
         jal strcmp
         beq $v0, 0, acos
         
-        la $a0, ataop            # ArcTangent
+        la $a0, ataop           # ArcTangent
         jal strcmp
         beq $v0, 0, atan
         
-        la $a0, acsop            # ArcCosecant
+        la $a0, acsop           # ArcCosecant
         jal strcmp
         beq $v0, 0, acsc
         
-        la $a0, aseop            # ArcSecant
+        la $a0, aseop           # ArcSecant
         jal strcmp
         beq $v0, 0, asec
         
-        la $a0, actop            # ArcCotangent
+        la $a0, actop           # ArcCotangent
         jal strcmp
         beq $v0, 0, acot
         
         move $a0, $a1
-        jal atof
-        beq $s3, $sp, full
+        jal atof                # The input is either a number or an illegal operator
+        beq $s3, $sp, full      # Check if the stack is full
         li $t0, 1
-        beq $v0, $t0, prbad
+        beq $v0, $t0, prbad     # $v0=1 indicates atof was passed something that isn't a number
         addi $s3, $s3, -8
-        s.d $f30, 0($s3)
+        s.d $f30, 0($s3)        # Store the operand on the stack
         
         j rpn
 
-full:   la $a0, fulls
+full:   la $a0, fulls           # Print an error if the number stack is full
         li $v0, 4
         syscall
         
         j main
         
-malf:   la $a0, malfs
+malf:   la $a0, malfs           # Print an error if the input is malformed
         li $v0, 4
         syscall
         
         j main
         
-prbad:  la $a0, bad
+prbad:  la $a0, bad             # Print an error if an illegal operator is used
         li $v0, 4
         syscall
         
