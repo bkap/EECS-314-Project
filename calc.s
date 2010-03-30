@@ -434,6 +434,7 @@ end:    addi $s3, $s3, -8
         
 res:    l.d $f12, 0($s3)         # Get the result
         addi $s3, $s3, 8
+        bne $s3, $s2, malf
         li $v0, 3
         syscall
         la $a0, return
@@ -725,7 +726,7 @@ exit:   li $v0, 10              # Quit the program
 op:     .space 21                # Allocate 21 bytes for a number (20 digits, 1 null)
 bad:    .asciiz "You have entered an illegal operand.  The calculator will now be reset.\n"
 fulls:  .asciiz "The number stack is full. The calculator will now be reset.\n"
-malfs:  .asciiz "You have entered too few operands to complete the requested operations. The calculator will now be reset.\n"
+malfs:  .asciiz "The input you have entered is malformed. The calculator will now be reset.\n"
 debug:  .asciiz "debug statement\n"
 return: .asciiz "\n"
 plop:   .asciiz "+"
