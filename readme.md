@@ -1,5 +1,5 @@
 # EECS 314 Project
-# Jacob Emmert-Aronson, Andrew Johnson, Ben Kaplan, and Frankie Lutikoff
+## Jacob Emmert-Aronson, Andrew Johnson, Ben Kaplan, and Frankie Lutikoff
 
 * Double-precision postfix notation calculator
 * Supports the following operations:
