@@ -339,8 +339,13 @@ acos:   beq $s3, $s2, malf      # Malformed input
 atan:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
+		li.d $f16 , 1.0
+		mov.d $f18, $f6
+		mul.d $f6, $f6, $f6
+		add.d $f6, $f16, $f6
+		sqrt.d $f6, $f6	
+		div.d $f6, $f18, $f6
         jal atrig
-        div.d $f12, $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
 acot:   beq $s3, $s2, malf      # Malformed input
