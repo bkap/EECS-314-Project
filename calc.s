@@ -329,8 +329,11 @@ asin:   beq $s3, $s2, malf      # Malformed input
 acos:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-        jal atrig
-        mov.d $f12, $f18
+        li.d $f16 , 1.0
+		mul.d $f6, $f6, $f6
+		sub.d $f6, $f16, $f6
+		sqrt.d $f6, $f6		
+		jal atrig
         j end                   # Perform all necessary operations after computing the result
 
 atan:   beq $s3, $s2, malf      # Malformed input
@@ -459,9 +462,9 @@ atcont0:li.d $f8, 6.28318530717953072
         mul.d $f18, $f18, $f8
         sub.d $f6, $f6, $f18
         
-		li $t0, 50000
-		li $t1, 0
-        li.d $f2, 1.0           # Set accumulated total to 0
+		li $t0, 50000			# max 50k iterations because boundaries are slow to converge
+		li $t1, 0				# loop counter initialized
+        li.d $f2, 0.0           # Set accumulated total to 0
 		li.d $f4, 1.0			# Set $f4 to 1
         li.d $f8, 1.0           # set $f8 to 1
         li.d $f10, 1.0          # Initialize the factorial counter
@@ -487,14 +490,13 @@ atloop: beq $t0, $t1, atloopend
 		add.d $f4, $f4, $f8		# increment the exponent again
 		mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
 		
-		addi $t1, $t1, 1
+		addi $t1, $t1, 1		# loop counter
 		
         c.eq.d $f0, $f2         # repeat until the current term is below
         bc1f atloop              # the precision of the total
 atloopend:
         mov.d $f12, $f2         # move the total to the return value
-		sub.d $f12, $f12, $f8
-		
+				
         jr $ra		
 
 end:    addi $s3, $s3, -8       
