@@ -323,41 +323,41 @@ csc:    beq $s3, $s2, malf      # Malformed input
 asin:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-        jal trig
+        jal atrig
         j end                   # Perform all necessary operations after computing the result
         
 acos:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-        jal trig
+        jal atrig
         mov.d $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
 atan:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-        jal trig
+        jal atrig
         div.d $f12, $f12, $f18
         j end                   # Perform all necessary operations after computing the result
 
 acot:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-        jal trig
+        jal atrig
         div.d $f12, $f18, $f12
         j end                   # Perform all necessary operations after computing the result
 
 asec:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-        jal trig
+        jal atrig
         div.d $f12, $f8, $f18
         j end                   # Perform all necessary operations after computing the result
 
 acsc:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-        jal trig
+        jal atrig
         div.d $f12, $f8, $f12
         j end                   # Perform all necessary operations after computing the result
         
@@ -407,7 +407,7 @@ tloop:  mov.d $f0, $f2          # Save the current total
         div.d $f14, $f14, $f10  # divide coefficient by factorial counter
         sub.d $f10, $f10, $f8   # increment factorial counter
         mul.d $f16, $f16, $f6   # add to exponent again
-
+		
         c.eq.d $f0, $f2         # repeat until the current term is below
         bc1f tloop              # the precision of the total
         mov.d $f12, $f2         # move the total to the return value
@@ -426,6 +426,81 @@ tneg:   li.d $f8, 0.0
         sub.d $f18, $f8, $f18
         li.d $f8, 1.0
         jr $ra
+		
+### arctrig internals ###
+        # Compute arcsin(x) using a Taylor expansion
+		# Every arc function can be computed with the arcsin(x) expansion
+		# arccos(x) = arcsin(sqrt(1-x^2)
+        # Returns the function in $f12
+        #f0: holds the previous accumulated total for comparison
+        #f2: current accumulated total
+        #f4: exponent for the taylor series
+        #f6: the argument
+        #f8: used to store constants
+        #f10: counter for factorial
+        #f12: the return value
+        #f14: the current coefficient
+        #f16: the variable term
+        #f18: temporary
+atrig:  abs.d   $f18, $f6       # Ensure that the argument can be
+        li.d    $f8, 1.3493037704e10 # represented as a fixed-point word.
+        c.le.d  $f18, $f8
+        bc1t    atcont0
+
+        la      $a0, bad        # If it is too large, throw an error
+        li      $v0, 4          # message and let the user enter new
+        syscall                 # numbers
+        j main
+
+atcont0:li.d $f8, 6.28318530717953072
+        div.d $f18, $f6, $f8    # Convert the argument to a value
+        round.w.d $f18, $f18    # between -pi and pi
+        cvt.d.w $f18, $f18
+        mul.d $f18, $f18, $f8
+        sub.d $f6, $f6, $f18
+        
+		li.d $f28, 0.000001
+        li.d $f2, 1.0           # Set accumulated total to 0
+		li.d $f4, 1.0			# Set $f4 to 1
+        li.d $f8, 1.0           # set $f8 to 1
+        li.d $f10, 1.0          # Initialize the factorial counter
+        li.d $f14, 1.0          # Initialize the coefficient in the series w/o the exponent
+        li.d $f16, 1.0          # Initialize variable term
+
+atloop: mov.d $f0, $f2          # Save the current total
+        
+		
+		mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
+		
+		mul.d $f18, $f16, $f14	# multiplies the current coef and the exponent
+		
+		div.d $f18, $f18, $f4	# finishes the coef in the series
+        add.d $f2, $f2, $f18	# calculates the series term
+		mul.d $f18, $f18, $f4	# resets the cief to the correct value
+		div.d $f18, $f18, $f14	# divides the term by the coef
+		mul.d $f14, $f14, $f4	# multiplies the odd numbers
+		add.d $f4, $f4, $f8		# increment the exponent
+        div.d $f14, $f14, $f4 	# divides by the even numbers
+		
+		
+		add.d $f4, $f4, $f8		# increment the exponent again
+		mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
+		
+		
+		
+		
+		
+		
+		sub.d $f30, $f0, $f2
+		abs.d $f30, $f30
+		
+		
+        c.lt.d $f30, $f28         # repeat until the current term is below
+        bc1f atloop              # the precision of the total
+        mov.d $f12, $f2         # move the total to the return value
+		sub.d $f12, $f12, $f8
+		
+        jr $ra		
 
 end:    addi $s3, $s3, -8       
         s.d $f12, 0($s3)        # Push the result onto the stack
