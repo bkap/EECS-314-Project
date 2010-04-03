@@ -459,7 +459,8 @@ atcont0:li.d $f8, 6.28318530717953072
         mul.d $f18, $f18, $f8
         sub.d $f6, $f6, $f18
         
-		li.d $f28, 0.000001
+		li $t0, 50000
+		li $t1, 0
         li.d $f2, 1.0           # Set accumulated total to 0
 		li.d $f4, 1.0			# Set $f4 to 1
         li.d $f8, 1.0           # set $f8 to 1
@@ -467,7 +468,8 @@ atcont0:li.d $f8, 6.28318530717953072
         li.d $f14, 1.0          # Initialize the coefficient in the series w/o the exponent
         li.d $f16, 1.0          # Initialize variable term
 
-atloop: mov.d $f0, $f2          # Save the current total
+atloop: beq $t0, $t1, atloopend
+        mov.d $f0, $f2          # Save the current total
         
 		
 		mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
@@ -482,21 +484,14 @@ atloop: mov.d $f0, $f2          # Save the current total
 		add.d $f4, $f4, $f8		# increment the exponent
         div.d $f14, $f14, $f4 	# divides by the even numbers
 		
-		
 		add.d $f4, $f4, $f8		# increment the exponent again
 		mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
 		
+		addi $t1, $t1, 1
 		
-		
-		
-		
-		
-		sub.d $f30, $f0, $f2
-		abs.d $f30, $f30
-		
-		
-        c.lt.d $f30, $f28         # repeat until the current term is below
+        c.eq.d $f0, $f2         # repeat until the current term is below
         bc1f atloop              # the precision of the total
+atloopend:
         mov.d $f12, $f2         # move the total to the return value
 		sub.d $f12, $f12, $f8
 		
