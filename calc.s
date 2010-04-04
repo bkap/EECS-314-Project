@@ -472,24 +472,7 @@ tneg:   li.d $f8, 0.0
         #f14: the current coefficient
         #f16: the variable term
         #f18: temporary
-atrig:  abs.d   $f18, $f6       # Ensure that the argument can be
-        li.d    $f8, 1.3493037704e10 # represented as a fixed-point word.
-        c.le.d  $f18, $f8
-        bc1t    atcont0
-
-        la      $a0, bad        # If it is too large, throw an error
-        li      $v0, 4          # message and let the user enter new
-        syscall                 # numbers
-        j main
-
-atcont0:li.d $f8, 6.28318530717953072
-        div.d $f18, $f6, $f8    # Convert the argument to a value
-        round.w.d $f18, $f18    # between -pi and pi
-        cvt.d.w $f18, $f18
-        mul.d $f18, $f18, $f8
-        sub.d $f6, $f6, $f18
-        
-		li $t0, 50000			# max 50k iterations because boundaries are slow to converge
+atrig:  li $t0, 50000			# max 50k iterations because boundaries are slow to converge
 		li $t1, 0				# loop counter initialized
         li.d $f2, 0.0           # Set accumulated total to 0
 		li.d $f4, 1.0			# Set $f4 to 1
