@@ -276,7 +276,10 @@ floop:  mov.d $f0, $f2          # Save the current total
 log:    beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-        mov.d $f12, $f6         # Make log do nothing right now
+		li.d $f28, 0.0
+		c.le.d $f6, $f28		# checks to see if the input is less than 0
+		bc1t prbad				# logs must have input greater than 0
+		jal log2
         j end                   # Perform all necessary operations after computing the result
 
 sin:    beq $s3, $s2, malf      # Malformed input
@@ -505,13 +508,81 @@ atloopend:
         mov.d $f12, $f2         # move the total to the return value
 				
         jr $ra		
-
+		
+### Natural Log internals ###
+		# Compute ln(x) using a Taylor expansion
+        # Returns the function in $f12
+        #f0: holds the previous accumulated total for comparison
+        #f2: current accumulated total
+        #f4: exponent for the taylor series
+        #f6: the argument
+        #f8: used to store constants
+        #f10: counter for factorial
+        #f12: the return value
+        #f14: the current coefficient
+        #f16: the variable term
+        #f18: temporary
+log2:   li $t0, 50000			# max 50k iterations because boundaries are slow to converge
+		li $t1, 0				# loop counter initialized
+        li.d $f2, 0.0           # Set accumulated total to 0
+		li.d $f4, 1.0			# Set $f4 to 1
+        li.d $f8, -1.0          # set $f8 to -1
+        li.d $f10, 1.0          # Initialize the factorial counter
+        li.d $f14, 1.0          # Initialize the coefficient in the series w/o the exponent
+		li.d $f16, 2.0			
+		li.d $f18, 1.0			# Initialize to 1
+		
+		c.le.d $f6, $f16		# If the number is larger than 2 we have to do an inverse taylor series
+		bc1f invlog
+		
+		add.d $f6, $f6, $f8
+		
+logloop:beq $t0, $t1, logloopend
+        mov.d $f0, $f2          # Save the current total	
+		mul.d $f18, $f6, $f18	# running total of the exponent
+		div.d $f16, $f18, $f4	# divided by the coef
+		add.d $f2, $f2, $f16	# adds the total 
+		
+		mul.d $f18, $f18, $f8	# flips the sign of the term
+		sub.d $f4, $f4, $f8		# increment the exponent again
+		
+		addi $t1, $t1, 1		# loop counter
+		
+        c.eq.d $f0, $f2         # repeat until the current term is below
+        bc1f logloop              # the precision of the total
+logloopend:
+        mov.d $f12, $f2         # move the total to the return value
+				
+        jr $ra	
+		
+invlog: div.d $f20, $f4, $f6	# inverts the input to apply the taylor series
+		add.d $f6, $f20, $f8
+		
+ivlloop:beq $t0, $t1, ivlloopend
+        mov.d $f0, $f2          # Save the current total	
+		mul.d $f18, $f6, $f18	# running total of the exponent
+		div.d $f16, $f18, $f4	# divided by the coef
+		add.d $f2, $f2, $f16	# adds the total
+		
+		mul.d $f18, $f18, $f8	# flips the sign of the term
+		sub.d $f4, $f4, $f8		# increment the exponent again
+		
+		addi $t1, $t1, 1		# loop counter
+		
+        c.eq.d $f0, $f2         # repeat until the current term is below
+        bc1f ivlloop            # the precision of the total
+ivlloopend:
+        mov.d $f12, $f2         # move the total to the return value
+		neg.d $f12, $f12		# negates the result because it was an inversely taylorized series of numbas
+				
+        jr $ra	
+		
 end:    addi $s3, $s3, -8       
-        s.d $f12, 0($s3)        # Push the result onto the stack
+        s.d $f12, 0($s3)       # Push the result onto the stack
         
         j rpn                  # Continue the read loop
         
-res:    l.d $f12, 0($s3)         # Get the result
+res:    l.d $f12, 0($s3)        # Get the result
         addi $s3, $s3, 8
         bne $s3, $s2, malf
         li $v0, 3
