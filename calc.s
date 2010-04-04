@@ -329,12 +329,20 @@ asin:   beq $s3, $s2, malf      # Malformed input
 acos:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-        li.d $f16 , 1.0
+		abs.d $f18, $f6	
+        li.d $f16 , 1.0			
+		c.le.d $f16, $f18		# checks for boundaries taht give sqrt of a negative
+		bc1t divz
 		mul.d $f6, $f6, $f6
 		sub.d $f6, $f16, $f6
-		sqrt.d $f6, $f6		
+		sqrt.d $f6, $f6			# computes the relation between arcsin and arccos
 		jal atrig
         j end                   # Perform all necessary operations after computing the result
+		
+divz: 	li.d $f16 , 1.0
+		li.d $f18, 0.0
+		div.d $f12, $f16, $f18
+		j end
 
 atan:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
@@ -344,7 +352,7 @@ atan:   beq $s3, $s2, malf      # Malformed input
 		mul.d $f6, $f6, $f6
 		add.d $f6, $f16, $f6
 		sqrt.d $f6, $f6	
-		div.d $f6, $f18, $f6
+		div.d $f6, $f18, $f6	# computes the relationship between arcsin and arctan
         jal atrig
         j end                   # Perform all necessary operations after computing the result
 
@@ -358,22 +366,29 @@ acot:   beq $s3, $s2, malf      # Malformed input
 		sqrt.d $f6, $f6	
 		div.d $f6, $f18, $f6
 		jal atrig
-		li.d $f16, 1.57079632679489662
+		li.d $f16, 1.57079632679489662	# arctan = pi/2 - arccot
 		sub.d $f12, $f16, $f12
         j end                   # Perform all necessary operations after computing the result
 
 asec:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
+		abs.d $f18, $f6	
+        li.d $f16 , 1.0
+		c.le.d $f18, $f16 		# checks for boundaries problems
+		bc1t divz
+		div.d $f6, $f16, $f6
         jal atrig
-        div.d $f12, $f8, $f18
+		li.d $f16, 1.57079632679489662 # arcsec = pi/2 - arccsc
+		sub.d $f12, $f16, $f12
         j end                   # Perform all necessary operations after computing the result
 
 acsc:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
+		li.d $f16 , 1.0
+		div.d $f6, $f16, $f6
         jal atrig
-        div.d $f12, $f8, $f12
         j end                   # Perform all necessary operations after computing the result
         
 ### trig internals ###
@@ -484,15 +499,12 @@ atcont0:li.d $f8, 6.28318530717953072
         li.d $f16, 1.0          # Initialize variable term
 
 atloop: beq $t0, $t1, atloopend
-        mov.d $f0, $f2          # Save the current total
-        
-		
-		mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
-		
+        mov.d $f0, $f2          # Save the current total	
+		mul.d $f16, $f16, $f6   # add 1 to exponent of variable term		
 		mul.d $f18, $f16, $f14	# multiplies the current coef and the exponent
-		
 		div.d $f18, $f18, $f4	# finishes the coef in the series
         add.d $f2, $f2, $f18	# calculates the series term
+		
 		mul.d $f18, $f18, $f4	# resets the cief to the correct value
 		div.d $f18, $f18, $f14	# divides the term by the coef
 		mul.d $f14, $f14, $f4	# multiplies the odd numbers
@@ -808,7 +820,7 @@ exit:   li $v0, 10              # Quit the program
 
         .data
 op:     .space 21                # Allocate 21 bytes for a number (20 digits, 1 null)
-bad:    .asciiz "You have entered an illegal operand.  The calculator will now be reset.\n"
+bad:    .asciiz "You have entered an illegal expression.  The calculator will now be reset.\n"
 fulls:  .asciiz "The number stack is full. The calculator will now be reset.\n"
 malfs:  .asciiz "The input you have entered is malformed. The calculator will now be reset.\n"
 debug:  .asciiz "debug statement\n"
@@ -828,7 +840,7 @@ quop:   .asciiz "quit"
 asiop:  .asciiz "asin"
 acoop:  .asciiz "acos"
 ataop:  .asciiz "atan"
-acsop:  .asciiz "acos"
+acsop:  .asciiz "acsc"
 aseop:  .asciiz "asec"
 actop:  .asciiz "acot"
 lgop:   .asciiz "log"

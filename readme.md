@@ -10,7 +10,7 @@
     * Exponentiation and Roots
     * Trigonometric Functions
     * Inverse Trig Functions
-    * Base 2 Logarithms
+    * Natural Logarithms
 
 
 ## Notes
