@@ -276,10 +276,10 @@ floop:  mov.d $f0, $f2          # Save the current total
 log:    beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-		li.d $f28, 0.0
-		c.le.d $f6, $f28		# checks to see if the input is less than 0
-		bc1t prbad				# logs must have input greater than 0
-		jal log2
+                li.d $f28, 0.0
+                c.le.d $f6, $f28                # checks to see if the input is less than 0
+                bc1t prbad                              # logs must have input greater than 0
+                jal log2
         j end                   # Perform all necessary operations after computing the result
 
 sin:    beq $s3, $s2, malf      # Malformed input
@@ -332,30 +332,39 @@ asin:   beq $s3, $s2, malf      # Malformed input
 acos:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-		abs.d $f18, $f6	
-        li.d $f16 , 1.0			
-		c.le.d $f16, $f18		# checks for boundaries taht give sqrt of a negative
-		bc1t divz
-		mul.d $f6, $f6, $f6
-		sub.d $f6, $f16, $f6
-		sqrt.d $f6, $f6			# computes the relation between arcsin and arccos
-		jal atrig
+                abs.d $f18, $f6
+        li.d $f16 , 1.0                 
+                c.le.d $f16, $f18               # checks for boundaries taht give sqrt of a negative
+                bc1t divz
+                c.eq.d $f18, $f6                # check if input is negative
+                mul.d $f6, $f6, $f6
+                sub.d $f6, $f16, $f6
+                sqrt.d $f6, $f6                 # computes the relation between arcsin and arccos
+                bc1t acos1                      # if we started with a
+                li.d $f16, 0.0                  # negative, we should end with
+                sub.d $f6, $f16, $f6            # a negative
+acos1:          jal atrig
+        li.d $f16, 0.0
+        c.lt.d $f12, $f16
+        bc1f end                # If answer is positive, we're done.
+        li.d $f16, 3.14159265358979324
+        add.d $f12, $f12, $f16  # Else, we need to add pi.
         j end                   # Perform all necessary operations after computing the result
-		
-divz: 	li.d $f16 , 1.0
-		li.d $f18, 0.0
-		div.d $f12, $f16, $f18
-		j end
+                
+divz:   li.d $f16 , 1.0
+                li.d $f18, 0.0
+                div.d $f12, $f16, $f18
+                j end
 
 atan:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-		li.d $f16 , 1.0
-		mov.d $f18, $f6
-		mul.d $f6, $f6, $f6
-		add.d $f6, $f16, $f6
-		sqrt.d $f6, $f6	
-		div.d $f6, $f18, $f6	# computes the relationship between arcsin and arctan
+                li.d $f16 , 1.0
+                mov.d $f18, $f6
+                mul.d $f6, $f6, $f6
+                add.d $f6, $f16, $f6
+                sqrt.d $f6, $f6
+                div.d $f6, $f18, $f6    # computes the relationship between arcsin and arctan
         jal atrig
         j end                   # Perform all necessary operations after computing the result
 
@@ -363,34 +372,34 @@ acot:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
         li.d $f16 , 1.0
-		mov.d $f18, $f6
-		mul.d $f6, $f6, $f6
-		add.d $f6, $f16, $f6
-		sqrt.d $f6, $f6	
-		div.d $f6, $f18, $f6
-		jal atrig
-		li.d $f16, 1.57079632679489662	# arctan = pi/2 - arccot
-		sub.d $f12, $f16, $f12
+                mov.d $f18, $f6
+                mul.d $f6, $f6, $f6
+                add.d $f6, $f16, $f6
+                sqrt.d $f6, $f6 
+                div.d $f6, $f18, $f6
+                jal atrig
+                li.d $f16, 1.57079632679489662  # arctan = pi/2 - arccot
+                sub.d $f12, $f16, $f12
         j end                   # Perform all necessary operations after computing the result
 
 asec:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-		abs.d $f18, $f6	
+                abs.d $f18, $f6 
         li.d $f16 , 1.0
-		c.le.d $f18, $f16 		# checks for boundaries problems
-		bc1t divz
-		div.d $f6, $f16, $f6
+                c.le.d $f18, $f16               # checks for boundaries problems
+                bc1t divz
+                div.d $f6, $f16, $f6
         jal atrig
-		li.d $f16, 1.57079632679489662 # arcsec = pi/2 - arccsc
-		sub.d $f12, $f16, $f12
+                li.d $f16, 1.57079632679489662 # arcsec = pi/2 - arccsc
+                sub.d $f12, $f16, $f12
         j end                   # Perform all necessary operations after computing the result
 
 acsc:   beq $s3, $s2, malf      # Malformed input
         l.d $f6, 0($s3)         # Get the operand
         addi $s3, $s3, 8
-		li.d $f16 , 1.0
-		div.d $f6, $f16, $f6
+                li.d $f16 , 1.0
+                div.d $f6, $f16, $f6
         jal atrig
         j end                   # Perform all necessary operations after computing the result
         
@@ -440,12 +449,12 @@ tloop:  mov.d $f0, $f2          # Save the current total
         div.d $f14, $f14, $f10  # divide coefficient by factorial counter
         sub.d $f10, $f10, $f8   # increment factorial counter
         mul.d $f16, $f16, $f6   # add to exponent again
-		
+                
         c.eq.d $f0, $f2         # repeat until the current term is below
         bc1f tloop              # the precision of the total
         mov.d $f12, $f2         # move the total to the return value
 
-	    li.d $f8, 1.0
+            li.d $f8, 1.0
         mul.d $f18, $f12, $f12  # Compute the cosine from the sine.
         sub.d $f18, $f8, $f18   # cos(x)=+/-sqrt(1-sin(x)^2)
         sqrt.d $f18, $f18       # It's negative iff |x|>pi/2
@@ -459,11 +468,11 @@ tneg:   li.d $f8, 0.0
         sub.d $f18, $f8, $f18
         li.d $f8, 1.0
         jr $ra
-		
+                
 ### arctrig internals ###
         # Compute arcsin(x) using a Taylor expansion
-		# Every arc function can be computed with the arcsin(x) expansion
-		# arccos(x) = arcsin(sqrt(1-x^2)
+                # Every arc function can be computed with the arcsin(x) expansion
+                # arccos(x) = arcsin(sqrt(1-x^2)
         # Returns the function in $f12
         #f0: holds the previous accumulated total for comparison
         #f2: current accumulated total
@@ -475,42 +484,42 @@ tneg:   li.d $f8, 0.0
         #f14: the current coefficient
         #f16: the variable term
         #f18: temporary
-atrig:  li $t0, 50000			# max 50k iterations because boundaries are slow to converge
-		li $t1, 0				# loop counter initialized
+atrig:  li $t0, 50000                   # max 50k iterations because boundaries are slow to converge
+                li $t1, 0                               # loop counter initialized
         li.d $f2, 0.0           # Set accumulated total to 0
-		li.d $f4, 1.0			# Set $f4 to 1
+                li.d $f4, 1.0                   # Set $f4 to 1
         li.d $f8, 1.0           # set $f8 to 1
         li.d $f10, 1.0          # Initialize the factorial counter
         li.d $f14, 1.0          # Initialize the coefficient in the series w/o the exponent
         li.d $f16, 1.0          # Initialize variable term
 
 atloop: beq $t0, $t1, atloopend
-        mov.d $f0, $f2          # Save the current total	
-		mul.d $f16, $f16, $f6   # add 1 to exponent of variable term		
-		mul.d $f18, $f16, $f14	# multiplies the current coef and the exponent
-		div.d $f18, $f18, $f4	# finishes the coef in the series
-        add.d $f2, $f2, $f18	# calculates the series term
-		
-		mul.d $f18, $f18, $f4	# resets the cief to the correct value
-		div.d $f18, $f18, $f14	# divides the term by the coef
-		mul.d $f14, $f14, $f4	# multiplies the odd numbers
-		add.d $f4, $f4, $f8		# increment the exponent
-        div.d $f14, $f14, $f4 	# divides by the even numbers
-		
-		add.d $f4, $f4, $f8		# increment the exponent again
-		mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
-		
-		addi $t1, $t1, 1		# loop counter
-		
+        mov.d $f0, $f2          # Save the current total        
+                mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
+                mul.d $f18, $f16, $f14  # multiplies the current coef and the exponent
+                div.d $f18, $f18, $f4   # finishes the coef in the series
+        add.d $f2, $f2, $f18    # calculates the series term
+                
+                mul.d $f18, $f18, $f4   # resets the cief to the correct value
+                div.d $f18, $f18, $f14  # divides the term by the coef
+                mul.d $f14, $f14, $f4   # multiplies the odd numbers
+                add.d $f4, $f4, $f8             # increment the exponent
+        div.d $f14, $f14, $f4   # divides by the even numbers
+                
+                add.d $f4, $f4, $f8             # increment the exponent again
+                mul.d $f16, $f16, $f6   # add 1 to exponent of variable term
+                
+                addi $t1, $t1, 1                # loop counter
+                
         c.eq.d $f0, $f2         # repeat until the current term is below
         bc1f atloop              # the precision of the total
 atloopend:
         mov.d $f12, $f2         # move the total to the return value
-				
-        jr $ra		
-		
+                                
+        jr $ra          
+                
 ### Natural Log internals ###
-		# Compute ln(x) using a Taylor expansion
+                # Compute ln(x) using a Taylor expansion
         # Returns the function in $f12
         #f0: holds the previous accumulated total for comparison
         #f2: current accumulated total
@@ -522,61 +531,61 @@ atloopend:
         #f14: the current coefficient
         #f16: the variable term
         #f18: temporary
-log2:   li $t0, 50000			# max 50k iterations because boundaries are slow to converge
-		li $t1, 0				# loop counter initialized
+log2:   li $t0, 50000                   # max 50k iterations because boundaries are slow to converge
+                li $t1, 0                               # loop counter initialized
         li.d $f2, 0.0           # Set accumulated total to 0
-		li.d $f4, 1.0			# Set $f4 to 1
+                li.d $f4, 1.0                   # Set $f4 to 1
         li.d $f8, -1.0          # set $f8 to -1
         li.d $f10, 1.0          # Initialize the factorial counter
         li.d $f14, 1.0          # Initialize the coefficient in the series w/o the exponent
-		li.d $f16, 2.0			
-		li.d $f18, 1.0			# Initialize to 1
-		
-		c.le.d $f6, $f16		# If the number is larger than 2 we have to do an inverse taylor series
-		bc1f invlog
-		
-		add.d $f6, $f6, $f8
-		
+                li.d $f16, 2.0                  
+                li.d $f18, 1.0                  # Initialize to 1
+                
+                c.le.d $f6, $f16                # If the number is larger than 2 we have to do an inverse taylor series
+                bc1f invlog
+                
+                add.d $f6, $f6, $f8
+                
 logloop:beq $t0, $t1, logloopend
-        mov.d $f0, $f2          # Save the current total	
-		mul.d $f18, $f6, $f18	# running total of the exponent
-		div.d $f16, $f18, $f4	# divided by the coef
-		add.d $f2, $f2, $f16	# adds the total 
-		
-		mul.d $f18, $f18, $f8	# flips the sign of the term
-		sub.d $f4, $f4, $f8		# increment the exponent again
-		
-		addi $t1, $t1, 1		# loop counter
-		
+        mov.d $f0, $f2          # Save the current total        
+                mul.d $f18, $f6, $f18   # running total of the exponent
+                div.d $f16, $f18, $f4   # divided by the coef
+                add.d $f2, $f2, $f16    # adds the total 
+                
+                mul.d $f18, $f18, $f8   # flips the sign of the term
+                sub.d $f4, $f4, $f8             # increment the exponent again
+                
+                addi $t1, $t1, 1                # loop counter
+                
         c.eq.d $f0, $f2         # repeat until the current term is below
         bc1f logloop              # the precision of the total
 logloopend:
         mov.d $f12, $f2         # move the total to the return value
-				
-        jr $ra	
-		
-invlog: div.d $f20, $f4, $f6	# inverts the input to apply the taylor series
-		add.d $f6, $f20, $f8
-		
+                                
+        jr $ra  
+                
+invlog: div.d $f20, $f4, $f6    # inverts the input to apply the taylor series
+                add.d $f6, $f20, $f8
+                
 ivlloop:beq $t0, $t1, ivlloopend
-        mov.d $f0, $f2          # Save the current total	
-		mul.d $f18, $f6, $f18	# running total of the exponent
-		div.d $f16, $f18, $f4	# divided by the coef
-		add.d $f2, $f2, $f16	# adds the total
-		
-		mul.d $f18, $f18, $f8	# flips the sign of the term
-		sub.d $f4, $f4, $f8		# increment the exponent again
-		
-		addi $t1, $t1, 1		# loop counter
-		
+        mov.d $f0, $f2          # Save the current total        
+                mul.d $f18, $f6, $f18   # running total of the exponent
+                div.d $f16, $f18, $f4   # divided by the coef
+                add.d $f2, $f2, $f16    # adds the total
+                
+                mul.d $f18, $f18, $f8   # flips the sign of the term
+                sub.d $f4, $f4, $f8             # increment the exponent again
+                
+                addi $t1, $t1, 1                # loop counter
+                
         c.eq.d $f0, $f2         # repeat until the current term is below
         bc1f ivlloop            # the precision of the total
 ivlloopend:
         mov.d $f12, $f2         # move the total to the return value
-		neg.d $f12, $f12		# negates the result because it was an inversely taylorized series of numbas
-				
-        jr $ra	
-		
+                neg.d $f12, $f12                # negates the result because it was an inversely taylorized series of numbas
+                                
+        jr $ra  
+                
 end:    addi $s3, $s3, -8       
         s.d $f12, 0($s3)       # Push the result onto the stack
         
