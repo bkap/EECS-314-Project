@@ -334,7 +334,7 @@ acos:   beq $s3, $s2, malf      # Malformed input
         addi $s3, $s3, 8
                 abs.d $f18, $f6
         li.d $f16 , 1.0                 
-                c.le.d $f16, $f18               # checks for boundaries taht give sqrt of a negative
+                c.lt.d $f16, $f18               # checks for boundaries taht give sqrt of a negative
                 bc1t divz
                 c.eq.d $f18, $f6                # check if input is negative
                 mul.d $f6, $f6, $f6
@@ -387,7 +387,7 @@ asec:   beq $s3, $s2, malf      # Malformed input
         addi $s3, $s3, 8
                 abs.d $f18, $f6 
         li.d $f16 , 1.0
-                c.le.d $f18, $f16               # checks for boundaries problems
+                c.lt.d $f18, $f16               # checks for boundaries problems
                 bc1t divz
                 div.d $f6, $f16, $f6
         jal atrig
