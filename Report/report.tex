@@ -1,11 +1,166 @@
-\documentclass[11pt,letterpaper]{article}
+\documentclass[10pt,letterpaper]{article}
 \usepackage{palatino, graphicx, amsmath, amsfonts}
 
 \title{EECS 314 Final Project Report}
-\author{Jacob Emmert-Aronson, Andrew Johnson, Ben Kaplan, and Frankie Lutikoff}
+\author{Jacob Emmert-Aronson, Andrew Johnson,\\Ben Kaplan, and Frankie Lutikoff}
 \date{May 2, 2010}
 
 \begin{document}
 \maketitle
+
+Our goal was to create a calculator for general-purpose scientific use in MIPS
+assembly language. The calculator should be able to support the entry of complex
+expressions. Furthermore, the user should be able to enter operands of double
+precision and the results of the computation should also be in double precision.
+In addition to the four basic operations, the calculator should support
+exponentiation and roots, trigonometric functions, inverse trigonometric
+functions, and natural logarithms.
+
+The first major challenge we faced was parsing the user input. Our goal was to
+support entering complex expressions on a single line of input, instead of
+allowing only one expression per line. SPIM provides syscalls for reading one
+double precision number from the input, but there is no way to read a sequence
+of doubles mixed with strings. As such, we had no choice but to read the entire
+line of input and parse it ourselves. This led to two distinct issues. Once the
+string was broken up into individual operators and operands, we had to determine
+which were operators and which were operands. Then the operands had to be
+converted from strings to actual double precision numbers. Both of these
+required sufficient error handling to determine when the user entered an illegal
+expression.
+
+The next major challenge was implementing the more complex operations, which
+included trigonometry, inverse trigonometry, and natural logarithms. We had to
+find a way to compute all of those operations without requiring overly complex
+mathematical operations. Furthermore, those computations needed to retain enough
+precision to still be useful to the user. Finally, any computations had to be
+efficient and terminate relatively quickly. Especially for the inverse
+trigonometric functions, some methods of computation have issues with
+convergence around the edges of the domain, so those had to be avoided.
+
+The first and most important component we realized was the string functions,
+which include string comparison and \texttt{atof}, to convert from a string to a
+double. Without these functions, the input parser would have been entirely
+impossible and we would have been limited to one operation per line. These
+functions were conceptually difficult to implement in assembly language. These
+functions are called many times for each expression entered by the user, so they
+must be efficient and quick. Furthermore, they are required to gracefully handle
+errors, as they are the primary means for determining if the user entered an
+illegal expression. To overcome these challenges, we used \texttt{atof} and
+\texttt{strcmp} from the C standard library as models. As a result, we produced
+an efficient, elegant solution to the problem.
+
+The input parser was the next key component we realized. Because of the strong
+\texttt{atof} and \texttt{strcmp} we produced, writing the parser was much
+easier than it otherwise would have been. The key design challenge here was
+choosing between infix, prefix, or postfix notation. Infix is more familiar to
+the average user, while postfix is a simpler algorithm to implement. We chose to
+use postfix notation. While we did work on an infix parser, it was quite
+complex. As such we felt that we could implement a more efficient and reliable
+calculator by using postfix notation.
+
+The final component of the calculator was the implementations of the operators
+themselves. The four basic operations were simple as we could use the built-in
+floating point operations. Exponentiation and roots presented the first issue.
+We could have used one operator to perform both operations, requiring the user
+to enter \texttt{2 .5} \verb|^| to compute the square root of two, or two separate
+operations, requiring the user to enter \texttt{2 2 \~} to compute the square
+root of two. We opted for the first option. That operator first computes the
+exponent as if there was no fractional part of the exponent, and then computes
+the fractional part and properly combines the results. This resulted in a
+simpler interface for the user.
+
+For the trigonometric functions, inverse trig functions, and natural logarithms,
+we chose to use Taylor series. Thus we could use simpler operations to compute
+these more complex functions. The main design issue was the convergence of the
+Taylor series. Inverse trig especially had issues with converging near the
+boundaries of the domain. Also, all of those functions other than the
+trigonometric functions are undefined in certain areas. To address these issues,
+we implemented a bounds check where appropriate and used an iteration limit.
+Therefore the series would either converge or we cut off computation after some
+large number of steps. This allows these functions to compute the result in a
+short period of time regardless of the input.
+
+Each supported operation has been implemented as its own function. Some
+operations, such as the trigonometric functions, use helper functions to compute
+their results. Furthermore, reading and parsing user input is its own function,
+as is error handling and printing the final result. Finally, \texttt{atof} and
+the string comparison functions are also implemented as functions. The reading
+and parsing function is run immediately upon starting the program. It determines
+what is in the input by calling the string comparison functions. When it
+encounters an operand, it calls \texttt{atof} and puts resulting double on the
+stack. When it encounters an operator, it calls the appropriate operator
+function. All operands and results are passed between functions using the stack.
+That function calls helper functions as appropriate. When it is finished, it
+puts the result on the stack and returns to the read/parse function. If that
+function determines that the user input has been exhausted, it calls the
+function to print the final result. If an error is encountered at any time, the
+appropriate error function is called.
+
+The calculator is run by calling \texttt{spim -f calc.s} from the terminal.
+Alternatively, \texttt{calc.s} can be loaded into PCSpim. When the calculator is
+run, no message is presented to the user. One may simply begin typing the
+expression. Due to limitations in SPIM's syscalls and the parser, no expression
+can be more than 500 characters and no individual operand may be more than 20
+characters. Furthermore, the number stack allocates space for only sixteen
+doubles at any one time, so no more than 16 operands may be entered in a row.
+However, any number of operations can appear in the expression. This is a
+reverse Polish calculator, so all operators follow the operands. This
+table lists all operators supported by the calculator and the operations they
+perform:
+\begin{table}[h!]
+    \centering
+    \begin{tabular}[h!]{| c | c |}
+        \hline
+        Operand & Operation Performed\\
+        \hline
+        + & Addition\\
+        \hline
+        - & Subtraction\\
+        \hline
+        * & Multiplication\\
+        \hline
+        / & Division\\
+        \hline
+        \verb|^| & Exponentiation and Roots\\
+        \hline
+        sin & Sine\\
+        \hline
+        cos & Cosine\\
+        \hline
+        tan & Tangent\\
+        \hline
+        sec & Secant\\
+        \hline
+        csc & Cosecant\\
+        \hline
+        cot & Cotangent\\
+        \hline
+        log & Natural Logarithm\\
+        \hline
+        asin & Inverse Sine\\
+        \hline
+        acos & Inverse Cosine\\
+        \hline
+        atan & Inverse Tangent\\
+        \hline
+        asec & Inverse Secant\\
+        \hline
+        acsc & Inverse Cosecant\\
+        \hline
+        acot & Inverse Cotangent\\
+        \hline
+        quit & Quit the Calculator\\
+        \hline
+    \end{tabular}
+    \caption{Supported Operations}
+    \label{tab:ops}
+\end{table}\\
+Once finished entering the expression, press enter to begin computation. When
+the calculator has computed the final result, it will be printed on the next
+line. The final result is not retained for use in later computations. Now a new
+expression can be entered. If an expression results in an error, such as stack
+overflow or an illegal expression, a message will inform the user of the error
+and reset the calculator. If an expression results in $\pm\infty$ or \texttt{NaN},
+that value will be printed, not an error message.
 
 \end{document}
