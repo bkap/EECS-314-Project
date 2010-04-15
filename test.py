@@ -11,7 +11,7 @@ def main() :
     for i in range(5) :
         proc.stdout.readline()
     for test in test_cases.readlines() :
-        input, result = test.split('\t')
+        input, result = test.strip().split('\t')
         proc.stdin.write(input.encode('utf-8') + b'\n')
         proc.stdin.flush()
         actual = proc.stdout.readline().strip()
